@@ -1,0 +1,69 @@
+services:
+  db:
+    image: "mysql:8.0"
+    container_name: projeto_faturacao_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: "admin"
+      MYSQL_DATABASE: "projeto_faturacao_db"
+      MYSQL_USER: "user"
+      MYSQL_PASSWORD: "user123"
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./sql:/docker-entrypoint-initdb.d
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: "rabbitmq:3-management"
+    container_name: projeto_faturacao_rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: "guest"
+      RABBITMQ_DEFAULT_PASS: "guest"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: ProjetoFaturacao/Dockerfile
+    container_name: projeto_faturacao_app
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=db;Database=projeto_faturacao_db;Uid=root;Pwd=admin;
+      - RABBITMQ_HOST=rabbitmq
+    ports:
+      - "8080:8080"
+
+  worker:
+    build:
+      context: .
+      dockerfile: WorkerProjetoFaturacao/Dockerfile
+    container_name: projeto_faturacao_worker
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=db;Database=projeto_faturacao_db;Uid=root;Pwd=admin;
+      - RABBITMQ_HOST=rabbitmq
+
+volumes:
+  db_data:
