@@ -1,0 +1,99 @@
+@using Microsoft.AspNetCore.Components;
+@using Microsoft.EntityFrameworkCore;
+@using ProjetoFaturacao.Models;
+
+@inject ApplicationDbContext DbContext
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+@page "/Clientes/Ver"
+
+<PageTitle>Ver Clientes</PageTitle>
+
+<h1>Lista de Clientes</h1>
+
+@if (clientes == null)
+{
+    <p><em>Carregando...</em></p>
+}
+else if (clientes.Count == 0)
+{
+    <p>Não há clientes registados.</p>
+    <button class="btn btn-primary" @onclick="IrParaCriar">Criar Novo Cliente</button>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>NIF</th>
+                <th>Contato</th>
+                <th>Email</th>
+                <th>Morada</th>
+                <th>Localidade</th>
+                <th>Código Postal</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var cliente in clientes)
+            {
+                <tr>
+                    <td>@cliente.Id_Cliente</td>
+                    <td>@cliente.Nome</td>
+                    <td>@cliente.NIF</td>
+                    <td>@cliente.Contato</td>
+                    <td>@cliente.Email</td>
+                    <td>@cliente.Morada</td>
+                    <td>@cliente.Localidade</td>
+                    <td>@cliente.Codigo_Postal</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick='() => EditarCliente(cliente.Id_Cliente)'>Editar</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => ConfirmarRemocao(cliente)">Eliminar</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <button class="btn btn-primary" @onclick="IrParaCriar">Criar Novo Cliente</button>
+}
+
+@code {
+    private List<Cliente>? clientes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        clientes = await DbContext.Clientes.ToListAsync();
+    }
+
+    private void EditarCliente(int id)
+    {
+        Navigation.NavigateTo($"/cliente/guardar/{id}");
+    }
+
+    private void IrParaCriar()
+    {
+        Navigation.NavigateTo("/cliente/guardar");
+    }
+
+    private async Task ConfirmarRemocao(Cliente cliente)
+    {
+        var confirmado = await JSRuntime.InvokeAsync<bool>("confirm", $"Tem certeza que deseja eliminar o cliente '{cliente.Nome}'?");
+        if (confirmado)
+        {
+            await RemoverCliente(cliente);
+        }
+    }
+
+    private async Task RemoverCliente(Cliente cliente)
+    {
+        if (cliente == null) return;
+
+        DbContext.Clientes.Remove(cliente);
+        await DbContext.SaveChangesAsync();
+        clientes = await DbContext.Clientes.ToListAsync();
+        StateHasChanged();
+    }
+}

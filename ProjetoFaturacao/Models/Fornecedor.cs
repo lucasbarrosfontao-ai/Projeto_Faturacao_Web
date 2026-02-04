@@ -21,7 +21,7 @@ namespace ProjetoFaturacao.Models
 
         public string Email { get; set; } = string.Empty;
 
-        public string Morada { get; set; } = string.Empty;
+        public string Rua { get; set; } = string.Empty;
 
         public string Localidade { get; set; } = string.Empty;
 

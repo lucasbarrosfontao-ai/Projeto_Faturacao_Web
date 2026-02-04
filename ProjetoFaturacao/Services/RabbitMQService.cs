@@ -8,11 +8,11 @@ public class RabbitMQService
     private readonly string _user;
     private readonly string _password;
 
-    public RabbitMQService()
+    public RabbitMQService(IConfiguration configuration)
     {
-        _hostname = Environment.GetEnvironmentVariable("RABBITMQ_HOST") ?? "localhost";
-        _user = Environment.GetEnvironmentVariable("RABBITMQ_USER") ?? "guest";
-        _password = Environment.GetEnvironmentVariable("RABBITMQ_PASSWORD") ?? "guest";
+        _hostname = configuration["RABBITMQ_HOST"] ?? "localhost";
+        _user = configuration["RABBITMQ_USER"] ?? "guest";
+        _password = configuration["RABBITMQ_PASSWORD"] ?? "guest";
     }
 
     public async Task EnviarFaturaParaFila(FaturaMessage fatura)

@@ -34,6 +34,6 @@ namespace ProjetoFaturacao.Models
         [MaxLength(20)]
         public string Estado { get; set; } = "Emitida";
 
-        public ICollection<LinhaFatura>? LinhasFatura { get; set; }
+        public virtual ICollection<LinhaFatura>? LinhasFatura { get; set; }
     }
 }

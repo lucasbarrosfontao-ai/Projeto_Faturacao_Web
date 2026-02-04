@@ -1,0 +1,103 @@
+@using Microsoft.AspNetCore.Components;
+@using Microsoft.EntityFrameworkCore;
+@using ProjetoFaturacao.Models;
+@using Microsoft.JSInterop;
+@inject IJSRuntime JSRuntime;
+@inject ApplicationDbContext DbContext
+@inject NavigationManager Navigation
+
+@page "/Fornecedores/Ver"
+
+<PageTitle>Ver Fornecedores</PageTitle>
+
+<h1>Lista de Fornecedores</h1>
+
+@if (fornecedores == null)
+{
+    <p><em>Carregando...</em></p>
+}
+else if (fornecedores.Count == 0)
+{
+    <p>Não há fornecedores registados.</p>
+    <button class="btn btn-primary" @onclick="IrParaCriar">Criar Novo Fornecedor</button>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome da Empresa</th>
+                <th>NIPC</th>
+                <th>Nome do Representante</th>
+                <th>Contato</th>
+                <th>Email</th>
+                <th>Morada</th>
+                <th>Localidade</th>
+                <th>Código Postal</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var fornecedor in fornecedores)
+            {
+                <tr>
+                    <td>@fornecedor.Id_Fornecedor</td>
+                    <td>@fornecedor.Nome_Empresa</td>
+                    <td>@fornecedor.NIPC</td>
+                    <td>@fornecedor.Nome_Representante</td>
+                    <td>@fornecedor.Contato</td>
+                    <td>@fornecedor.Email</td>
+                    <td>@fornecedor.Rua</td>
+                    <td>@fornecedor.Localidade</td>
+                    <td>@fornecedor.Codigo_Postal</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick='() => EditarFornecedor(fornecedor.Id_Fornecedor)'>Editar</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => ConfirmarRemocao(fornecedor)">Eliminar</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <button class="btn btn-primary" @onclick="IrParaCriar">Criar Novo Fornecedor</button>
+}
+
+@code {
+    
+    private List<Fornecedor>? fornecedores;
+
+    protected override async Task OnInitializedAsync()
+    {
+        fornecedores = await DbContext.Fornecedores.ToListAsync();
+    }
+
+    private void IrParaCriar()
+    {
+        Navigation.NavigateTo("/fornecedor/guardar");
+    }
+
+    private async Task ConfirmarRemocao(Fornecedor fornecedor)
+    {
+        var confirmado = await JSRuntime.InvokeAsync<bool>("confirm", $"Tem certeza que deseja eliminar o fornecedor '{fornecedor.Nome_Empresa}'?");
+        if (confirmado)
+        {
+            await RemoverFornecedor(fornecedor);
+        }
+    }
+
+    private void EditarFornecedor(int id)
+    {
+        Navigation.NavigateTo($"/fornecedor/guardar/{id}");
+    }
+
+    private async Task RemoverFornecedor(Fornecedor fornecedor)
+    {
+        if (fornecedor == null) return;
+
+        DbContext.Fornecedores.Remove(fornecedor);
+        await DbContext.SaveChangesAsync();
+        fornecedores = await DbContext.Fornecedores.ToListAsync();
+        StateHasChanged();
+    }
+}

@@ -1,6 +1,13 @@
+using Microsoft.EntityFrameworkCore;
 using ProjetoFaturacao.Components;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Server=localhost;Database=projeto_faturacao_db;Uid=root;Pwd=admin;";
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+
+builder.Services.AddScoped<RabbitMQService>();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
