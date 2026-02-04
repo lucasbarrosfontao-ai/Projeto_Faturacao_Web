@@ -1,4 +1,4 @@
-@page "/cliente/guardar"
+@page "/cliente/guardar/{Id:int?}"
 @inject ApplicationDbContext DbContext
 @inject NavigationManager Navigation
 @inject ValidationService ValidationService  // Add this injection
@@ -7,66 +7,86 @@
 
 <h3>Guardar Cliente</h3>
 
-<EditForm Model="@cliente" OnValidSubmit="GuardarCliente">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-
-    <div class="form-group">
-        <label for="nome">Nome:</label>
-        <InputText id="nome" @bind-Value="cliente.Nome" class="form-control" />
-        <ValidationMessage For="@(() => cliente.Nome)" />
-    </div>
-
-    <div class="form-group">
-        <label for="nif">NIF:</label>
-        <InputText id="nif" @bind-Value="cliente.NIF" class="form-control" />
-        <ValidationMessage For="@(() => cliente.NIF)" />
-    </div>
-
-    <div class="form-group">
-        <label for="contato">Contato:</label>
-        <InputText id="contato" @bind-Value="cliente.Contato" class="form-control" />
-    </div>
-
-    <div class="form-group">
-        <label for="email">Email:</label>
-        <InputText id="email" @bind-Value="cliente.Email" class="form-control" />
-    </div>
-
-    <div class="form-group">
-        <label for="morada">Morada:</label>
-        <InputText id="morada" @bind-Value="cliente.Morada" class="form-control" />
-    </div>
-
-    <div class="form-group">
-        <label for="localidade">Localidade:</label>
-        <InputText id="localidade" @bind-Value="cliente.Localidade" class="form-control" />
-    </div>
-
-    <div class="form-group">
-        <label for="codigoPostal">Código Postal:</label>
-        <InputText id="codigoPostal" @bind-Value="cliente.Codigo_Postal" class="form-control" />
-    </div>
-
-    <button type="submit" class="btn btn-primary">Guardar</button>
-    <button type="button" class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
-</EditForm>
-
-@if (validationErrors.Any())
+@if (isLoading)
 {
-    <div class="alert alert-danger">
-        <ul>
-            @foreach (var error in validationErrors)
-            {
-                <li>@error</li>
-            }
-        </ul>
-    </div>
+    <p><em>Carregando...</em></p>
 }
+else
+{
+    <EditForm Model="@cliente" OnValidSubmit="GuardarCliente">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
 
+        <div class="form-group">
+            <label for="nome">Nome:</label>
+            <InputText id="nome" @bind-Value="cliente.Nome" class="form-control" />
+            <ValidationMessage For="@(() => cliente.Nome)" />
+        </div>
+
+        <div class="form-group">
+            <label for="nif">NIF:</label>
+            <InputText id="nif" @bind-Value="cliente.NIF" class="form-control" />
+            <ValidationMessage For="@(() => cliente.NIF)" />
+        </div>
+
+        <div class="form-group">
+            <label for="contato">Contato:</label>
+            <InputText id="contato" @bind-Value="cliente.Contato" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <InputText id="email" @bind-Value="cliente.Email" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label for="morada">Morada:</label>
+            <InputText id="morada" @bind-Value="cliente.Morada" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label for="localidade">Localidade:</label>
+            <InputText id="localidade" @bind-Value="cliente.Localidade" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label for="codigoPostal">Código Postal:</label>
+            <InputText id="codigoPostal" @bind-Value="cliente.Codigo_Postal" class="form-control" />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <button type="button" class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
+    </EditForm>
+
+    @if (validationErrors.Any())
+    {
+        <div class="alert alert-danger">
+            <ul>
+                @foreach (var error in validationErrors)
+                {
+                    <li>@error</li>
+                }
+            </ul>
+        </div>
+    }
+}
 @code {
+    [Parameter]
+    public int? Id { get; set; }
     private Cliente cliente = new Cliente();
     private List<string> validationErrors = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id.HasValue)
+        {
+            cliente = await DbContext.Clientes.FindAsync(Id.Value) ?? new Cliente();
+        }
+        isLoading = false;
+    }
+
+
 
     private async Task GuardarCliente()
     {
@@ -81,7 +101,14 @@
 
         try
         {
-            DbContext.Clientes.Add(cliente);
+            if (Id.HasValue)
+            {
+                DbContext.Clientes.Update(cliente);
+            }
+            else
+            {
+                DbContext.Clientes.Add(cliente);
+            }
             await DbContext.SaveChangesAsync();
             Navigation.NavigateTo("/clientes/ver");
         }

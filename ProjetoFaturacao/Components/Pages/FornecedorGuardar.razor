@@ -22,6 +22,47 @@ else
         <DataAnnotationsValidator />
         <ValidationSummary />
 
+        <div class="mb-3">
+            <label for="nomeEmpresa" class="form-label">Nome da Empresa</label>
+            <InputText id="nomeEmpresa" class="form-control" @bind-Value="fornecedor.Nome_Empresa" />
+            <ValidationMessage For="@(() => fornecedor.Nome_Empresa)" />
+        </div>
+        <div class="mb-3">
+            <label for="nipc" class="form-label">NIPC</label>
+            <InputText id="nipc" class="form-control" @bind-Value="fornecedor.NIPC" />
+            <ValidationMessage For="@(() => fornecedor.NIPC)" />
+        </div>
+        <div class="mb-3">
+            <label for="nomeRepresentante" class="form-label">Nome do Representante</label>
+            <InputText id="nomeRepresentante" class="form-control" @bind-Value="fornecedor.Nome_Representante" />
+           
+        </div>
+        <div class="mb-3">
+            <label for="contato" class="form-label">Contato</label>
+            <InputText id="contato" class="form-control" @bind-Value="fornecedor.Contato" />
+            
+        </div>
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <InputText id="email" class="form-control" @bind-Value="fornecedor.Email" />
+            
+        </div>
+        <div class="mb-3">
+            <label for="rua" class="form-label">Rua</label>
+            <InputText id="rua" class="form-control" @bind-Value="fornecedor.Rua" />
+            
+        </div>
+        <div class="mb-3">
+            <label for="localidade" class="form-label">Localidade</label>
+            <InputText id="localidade" class="form-control" @bind-Value="fornecedor.Localidade" />
+            
+        </div>
+        <div class="mb-3">
+            <label for="codigoPostal" class="form-label">Código Postal</label>
+            <InputText id="codigoPostal" class="form-control" @bind-Value="fornecedor.Codigo_Postal" />
+            
+        </div>
+        <button type="submit" class="btn btn-primary">Guardar</button>
         @if (validationErrors.Any())
         {
             <div class="alert alert-danger">
@@ -33,41 +74,7 @@ else
                 </ul>
             </div>
         }
-
-        <div class="mb-3">
-            <label for="nomeEmpresa" class="form-label">Nome da Empresa</label>
-            <InputText id="nomeEmpresa" class="form-control" @bind-Value="fornecedor.Nome_Empresa" />
-        </div>
-        <div class="mb-3">
-            <label for="nipc" class="form-label">NIPC</label>
-            <InputText id="nipc" class="form-control" @bind-Value="fornecedor.NIPC" />
-        </div>
-        <div class="mb-3">
-            <label for="nomeRepresentante" class="form-label">Nome do Representante</label>
-            <InputText id="nomeRepresentante" class="form-control" @bind-Value="fornecedor.Nome_Representante" />
-        </div>
-        <div class="mb-3">
-            <label for="contato" class="form-label">Contato</label>
-            <InputText id="contato" class="form-control" @bind-Value="fornecedor.Contato" />
-        </div>
-        <div class="mb-3">
-            <label for="email" class="form-label">Email</label>
-            <InputText id="email" class="form-control" @bind-Value="fornecedor.Email" />
-        </div>
-        <div class="mb-3">
-            <label for="rua" class="form-label">Rua</label>
-            <InputText id="rua" class="form-control" @bind-Value="fornecedor.Rua" />
-        </div>
-        <div class="mb-3">
-            <label for="localidade" class="form-label">Localidade</label>
-            <InputText id="localidade" class="form-control" @bind-Value="fornecedor.Localidade" />
-        </div>
-        <div class="mb-3">
-            <label for="codigoPostal" class="form-label">Código Postal</label>
-            <InputText id="codigoPostal" class="form-control" @bind-Value="fornecedor.Codigo_Postal" />
-        </div>
-        <button type="submit" class="btn btn-primary">Guardar</button>
-    </EditForm>
+        </EditForm>
 }
 @code {
     [Parameter]
@@ -99,16 +106,16 @@ else
 
         try
         {
-            if (fornecedor.Id_Fornecedor == 0)
-            {
-                DbContext.Fornecedores.Add(fornecedor);
-            }
-            else
+            if (Id.HasValue)
             {
                 DbContext.Fornecedores.Update(fornecedor);
             }
+            else
+            {
+                DbContext.Fornecedores.Add(fornecedor);
+            }
             await DbContext.SaveChangesAsync();
-            Navigation.NavigateTo("/Fornecedores/Ver");
+            Navigation.NavigateTo("/fornecedores/ver");
         }
         catch (Exception ex)
         {
