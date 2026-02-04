@@ -1,15 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-WorkerProjetoFaturacao-5f7caaa0-c65f-44bb-8863-2db8daf4f33b</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DotNetEnv" Version="3.1.1" />
-    <PackageReference Include="Microsoft.EntityFramework.SqlServer" Version="6.5.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
     <PackageReference Include="RabbitMQ.Client" Version="7.2.0" />
   </ItemGroup>
-
 </Project>
