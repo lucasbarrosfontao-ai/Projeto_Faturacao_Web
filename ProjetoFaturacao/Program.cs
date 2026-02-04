@@ -8,6 +8,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
 builder.Services.AddScoped<RabbitMQService>();
+builder.Services.AddScoped<ValidationService>(); // Add this line for the new validator service
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

@@ -1,6 +1,7 @@
 @page "/cliente/guardar"
 @inject ApplicationDbContext DbContext
 @inject NavigationManager Navigation
+@inject ValidationService ValidationService  // Add this injection
 
 <PageTitle>Guardar Cliente</PageTitle>
 
@@ -51,11 +52,33 @@
     <button type="button" class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
 </EditForm>
 
+@if (validationErrors.Any())
+{
+    <div class="alert alert-danger">
+        <ul>
+            @foreach (var error in validationErrors)
+            {
+                <li>@error</li>
+            }
+        </ul>
+    </div>
+}
+
 @code {
     private Cliente cliente = new Cliente();
+    private List<string> validationErrors = new();
 
     private async Task GuardarCliente()
     {
+        validationErrors.Clear();
+        var errors = ValidationService.ValidatePerson(cliente.NIF, cliente.Nome, cliente.Contato, cliente.Codigo_Postal, cliente.Email);
+        if (errors.Any())
+        {
+            validationErrors = errors;
+            StateHasChanged();
+            return;  // Prevent save
+        }
+
         try
         {
             DbContext.Clientes.Add(cliente);
@@ -64,7 +87,8 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Erro ao guardar cliente: {ex.Message}");
+            validationErrors.Add($"Erro ao guardar cliente: {ex.Message}");
+            StateHasChanged();
         }
     }
 

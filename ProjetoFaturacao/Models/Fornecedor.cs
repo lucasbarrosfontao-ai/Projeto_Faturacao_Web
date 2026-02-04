@@ -13,6 +13,7 @@ namespace ProjetoFaturacao.Models
         public string Nome_Empresa { get; set; } = string.Empty;
 
         [Required]
+        [RegularExpression(@"^\d{9}$", ErrorMessage = "NIPC deve ter 9 dígitos.")]
         public string NIPC { get; set; } = string.Empty;
 
         public string Nome_Representante { get; set; } = string.Empty;

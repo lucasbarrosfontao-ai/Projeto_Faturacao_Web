@@ -4,6 +4,7 @@
 @inject NavigationManager Navigation;
 
 @inject ApplicationDbContext DbContext
+@inject ValidationService ValidationService // Add this injection
 
 @page "/fornecedor/guardar/{id:int?}"
 
@@ -20,6 +21,18 @@ else
     <EditForm Model="fornecedor" OnValidSubmit="HandleValidSubmit">
         <DataAnnotationsValidator />
         <ValidationSummary />
+
+        @if (validationErrors.Any())
+        {
+            <div class="alert alert-danger">
+                <ul>
+                    @foreach (var error in validationErrors)
+                    {
+                        <li>@error</li>
+                    }
+                </ul>
+            </div>
+        }
 
         <div class="mb-3">
             <label for="nomeEmpresa" class="form-label">Nome da Empresa</label>
@@ -62,6 +75,7 @@ else
 
     private Fornecedor fornecedor = new Fornecedor();
     private bool isLoading = true;
+    private List<string> validationErrors = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -74,15 +88,32 @@ else
 
     private async Task HandleValidSubmit()
     {
-        if (fornecedor.Id_Fornecedor == 0)
+        validationErrors.Clear();
+        var errors = ValidationService.ValidatePerson(fornecedor.NIPC, fornecedor.Nome_Empresa, fornecedor.Contato, fornecedor.Codigo_Postal, fornecedor.Email);
+        if (errors.Any())
         {
-            DbContext.Fornecedores.Add(fornecedor);
+            validationErrors = errors;
+            StateHasChanged();
+            return;  // Prevent save
         }
-        else
+
+        try
         {
-            DbContext.Fornecedores.Update(fornecedor);
+            if (fornecedor.Id_Fornecedor == 0)
+            {
+                DbContext.Fornecedores.Add(fornecedor);
+            }
+            else
+            {
+                DbContext.Fornecedores.Update(fornecedor);
+            }
+            await DbContext.SaveChangesAsync();
+            Navigation.NavigateTo("/Fornecedores/Ver");
         }
-        await DbContext.SaveChangesAsync();
-        Navigation.NavigateTo("/Fornecedores/Ver");
+        catch (Exception ex)
+        {
+            validationErrors.Add($"Erro ao guardar fornecedor: {ex.Message}");
+            StateHasChanged();
+        }
     }
 }

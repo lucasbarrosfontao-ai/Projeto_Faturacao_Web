@@ -1,0 +1,211 @@
+@using Microsoft.AspNetCore.Components;
+@using Microsoft.EntityFrameworkCore;
+@using ProjetoFaturacao.Models;
+@inject NavigationManager Navigation;
+
+@inject ApplicationDbContext DbContext
+@inject IJSRuntime JSRuntime
+@inject ValidationService ValidationService
+
+@page "/produto/guardar/{id:int?}"
+
+<PageTitle>Guardar Produto</PageTitle>
+
+@if (isLoading)
+{
+    <p><em>Carregando...</em></p>
+}
+else if (fornecedores == null || fornecedores.Count == 0)
+{
+    <div class="alert alert-warning">
+        <p>Nenhum fornecedor encontrado. Crie um fornecedor para poder criar um produto.</p>
+        <button class="btn btn-primary" @onclick="IrParaFornecedores">Criar Fornecedor</button>
+    </div>
+}
+else
+{
+    <h1>Guardar Produto</h1>
+
+    <EditForm Model="produto" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        @if (validationErrors.Any())
+        {
+            <div class="alert alert-danger">
+                <ul>
+                    @foreach (var error in validationErrors)
+                    {
+                        <li>@error</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        <div class="mb-3">
+            <label for="fornecedor" class="form-label">Fornecedor</label>
+            <InputSelect id="fornecedor" class="form-control" @bind-Value="produto.Id_Fornecedor">
+                <option value="">Selecione um fornecedor</option>
+                @foreach (var fornecedor in fornecedores)
+                {
+                    <option value="@fornecedor.Id_Fornecedor">@fornecedor.Nome_Empresa</option>
+                }
+            </InputSelect>
+            <ValidationMessage For="@(() => produto.Id_Fornecedor)" />
+        </div>
+
+        <div class="mb-3">
+            <label for="nome" class="form-label">Nome</label>
+            <InputText id="nome" class="form-control" @bind-Value="produto.Nome" />
+            <ValidationMessage For="@(() => produto.Nome)" />
+        </div>
+
+        <div class="mb-3">
+            <label for="referencia" class="form-label">Referência</label>
+            <InputText id="referencia" class="form-control" @bind-Value="produto.Referencia" />
+        </div>
+
+        <div class="mb-3">
+            <label for="descricao" class="form-label">Descrição</label>
+            <InputTextArea id="descricao" class="form-control" @bind-Value="produto.Descricao" />
+        </div>
+
+        <div class="mb-3">
+            <label for="precoCusto" class="form-label">Preço Custo</label>
+            <InputNumber id="precoCusto" class="form-control" @bind-Value="produto.Preco_Custo" step="0.01" />
+            <ValidationMessage For="@(() => produto.Preco_Custo)" />
+        </div>
+
+        <div class="mb-3">
+            <label for="precoVenda" class="form-label">Preço Venda</label>
+            <InputNumber id="precoVenda" class="form-control" @bind-Value="produto.Preco_Venda" step="0.01" />
+        </div>
+
+        <div class="mb-3">
+            <label for="unidadeMedida" class="form-label">Unidade de Medida</label>
+            <InputSelect id="unidadeMedida" class="form-control" @bind-Value="produto.Unidade_Medida">
+                <option value="">-- Selecione uma unidade --</option>
+                
+                <optgroup label="Comprimento">
+                    <option value="mm">Milímetro (mm)</option>
+                    <option value="cm">Centímetro (cm)</option>
+                    <option value="m">Metro (m)</option>
+                    <option value="km">Quilómetro (km)</option>
+                </optgroup>
+
+                <optgroup label="Volume">
+                    <option value="ml">Mililitro (ml)</option>
+                    <option value="cl">Centilitro (cl)</option>
+                    <option value="l">Litro (l)</option>
+                    <option value="kl">Quilolitro (kl)</option>
+                </optgroup>
+
+                <optgroup label="Massa/Peso">
+                    <option value="mg">Miligrama (mg)</option>
+                    <option value="g">Grama (g)</option>
+                    <option value="kg">Quilograma (kg)</option>
+                    <option value="t">Tonelada (t)</option>
+                </optgroup>
+
+                <optgroup label="Outros">
+                    <option value="un">Unidade (un)</option>
+                    <option value="par">Par</option>
+                    <option value="cx">Caixa</option>
+                    <option value="m2">Metro Quadrado (m²)</option>
+                </optgroup>
+            </InputSelect>
+            <ValidationMessage For="@(() => produto.Unidade_Medida)" class="text-danger" />
+        </div>
+
+        <div class="mb-3">
+            <label for="iva" class="form-label">IVA (%)</label>
+            <InputNumber id="iva" class="form-control" @bind-Value="produto.IVA" step="0.01" />
+            <ValidationMessage For="@(() => produto.IVA)" />
+        </div>
+
+        <div class="mb-3">
+            <label for="stockAtual" class="form-label">Stock Atual</label>
+            <InputNumber id="stockAtual" class="form-control" @bind-Value="produto.Stock_Atual" step="1" />
+            <ValidationMessage For="@(() => produto.Stock_Atual)" />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <button type="button" class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private Produto produto = new Produto();
+    private List<Fornecedor>? fornecedores;
+    private bool isLoading = true;
+    private List<string> validationErrors = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        fornecedores = await DbContext.Fornecedores.ToListAsync();
+
+        if (Id.HasValue)
+        {
+            produto = await DbContext.Produtos.FindAsync(Id.Value) ?? new Produto();
+        }
+
+        isLoading = false;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        validationErrors.Clear();
+        var validation = ValidationService.ValidateProduto(
+            produto.Nome, produto.Referencia, produto.Id_Fornecedor, 
+            produto.Preco_Custo, produto.Preco_Venda, produto.Unidade_Medida, 
+            produto.IVA, produto.Stock_Atual);
+
+        if (validation.Errors.Any())
+        {
+            validationErrors = validation.Errors;
+            StateHasChanged();
+            return;
+        }
+
+        // Handle confirmations
+        foreach (var confirmation in validation.Confirmations)
+        {
+            var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", confirmation);
+            if (!confirmed)
+                return; // Cancel save
+        }
+
+        try
+        {
+            // Proceed to save
+            if (produto.Id_Produto == 0)
+            {
+                DbContext.Produtos.Add(produto);
+            }
+            else
+            {
+                DbContext.Produtos.Update(produto);
+            }
+            await DbContext.SaveChangesAsync();
+            Navigation.NavigateTo("/Produtos/Ver");
+        }
+        catch (Exception ex)
+        {
+            validationErrors.Add($"Erro ao guardar produto: {ex.Message}");
+            StateHasChanged();
+        }
+    }
+
+    private void Cancelar()
+    {
+        Navigation.NavigateTo("/Produtos/Ver");
+    }
+
+    private void IrParaFornecedores()
+    {
+        Navigation.NavigateTo("/fornecedor/guardar");
+    }
+}

@@ -22,13 +22,19 @@ namespace ProjetoFaturacao.Models
 
         public string Descricao { get; set; } = string.Empty;
 
+        [Required]
+        public decimal Preco_Custo { get; set; }
+
+        public decimal Preco_Venda { get; set; }
+
         public string Unidade_Medida { get; set; } = string.Empty;
 
         [Required]
+        [Range(0, double.MaxValue, ErrorMessage = "IVA não pode ser negativo.")]
         public decimal IVA { get; set; }
 
         [Required]
-        public decimal Stock_Atual { get; set; }
+        public int Stock_Atual { get; set; }
     }
     
 }

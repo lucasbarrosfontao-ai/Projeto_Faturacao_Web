@@ -1,0 +1,101 @@
+@using Microsoft.AspNetCore.Components;
+@using Microsoft.EntityFrameworkCore;
+@using ProjetoFaturacao.Models;
+
+@inject ApplicationDbContext DbContext
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+@page "/Produtos/Ver"
+
+<PageTitle>Ver Produtos</PageTitle>
+
+<h1>Lista de Produtos</h1>
+
+@if (produtos == null)
+{
+    <p><em>Carregando...</em></p>
+}
+else if (produtos.Count == 0)
+{
+    <p>Não há produtos registados.</p>
+    <button class="btn btn-primary" @onclick="IrParaCriar">Criar Novo Produto</button>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Referência</th>
+                <th>Descrição</th>
+                <th>Preço Custo</th>
+                <th>Preço Venda</th>
+                <th>Unidade Medida</th>
+                <th>IVA</th>
+                <th>Stock Atual</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var produto in produtos)
+            {
+                <tr>
+                    <td>@produto.Id_Produto</td>
+                    <td>@produto.Nome</td>
+                    <td>@produto.Referencia</td>
+                    <td>@produto.Descricao</td>
+                    <td>@produto.Preco_Custo.ToString("C")</td>
+                    <td>@produto.Preco_Venda.ToString("C")</td>
+                    <td>@produto.Unidade_Medida</td>
+                    <td>@produto.IVA%</td>
+                    <td>@produto.Stock_Atual</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick='() => EditarProduto(produto.Id_Produto)'>Editar</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => ConfirmarRemocao(produto)">Eliminar</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <button class="btn btn-primary" @onclick="IrParaCriar">Criar Novo Produto</button>
+}
+
+@code {
+    private List<Produto>? produtos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        produtos = await DbContext.Produtos.Include(p => p.Fornecedor).ToListAsync();
+    }
+
+    private void EditarProduto(int id)
+    {
+        Navigation.NavigateTo($"/produto/guardar/{id}");
+    }
+
+    private void IrParaCriar()
+    {
+        Navigation.NavigateTo("/produto/guardar");
+    }
+
+    private async Task ConfirmarRemocao(Produto produto)
+    {
+        var confirmado = await JSRuntime.InvokeAsync<bool>("confirm", $"Tem certeza que deseja eliminar o produto '{produto.Nome}'?");
+        if (confirmado)
+        {
+            await RemoverProduto(produto);
+        }
+    }
+
+    private async Task RemoverProduto(Produto produto)
+    {
+        if (produto == null) return;
+
+        DbContext.Produtos.Remove(produto);
+        await DbContext.SaveChangesAsync();
+        produtos = await DbContext.Produtos.Include(p => p.Fornecedor).ToListAsync();
+        StateHasChanged();
+    }
+}

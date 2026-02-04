@@ -13,6 +13,7 @@ namespace ProjetoFaturacao.Models
         public string Nome { get; set; } = string.Empty;
 
         [Required]
+        [RegularExpression(@"^\d{9}$", ErrorMessage = "NIF deve ter 9 dígitos.")]
         public string NIF { get; set; } = string.Empty;
 
         public string Contato { get; set; } = string.Empty;
