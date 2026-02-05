@@ -1,0 +1,30 @@
+# ESTÁGIO 1: Build (Compilação)
+# Usamos o SDK do .NET 8 para compilar o código
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+# Copiar o ficheiro de projeto e restaurar as dependências (NuGet)
+# Fazemos isto primeiro para aproveitar o cache do Docker
+COPY ["ProjetoFaturacao.csproj", "./"]
+RUN dotnet restore "ProjetoFaturacao.csproj"
+
+# Copiar todo o resto do código do projeto
+COPY . .
+
+# Publicar a aplicação numa pasta chamada /app/publish
+RUN dotnet publish "ProjetoFaturacao.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+# ESTÁGIO 2: Runtime (Execução)
+# Usamos uma imagem muito mais pequena que só tem o necessário para rodar .NET
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+WORKDIR /app
+
+# Copiar os ficheiros compilados do estágio de build
+COPY --from=build /app/publish .
+
+# .NET 8 usa por padrão a porta 8080
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:8080
+
+# Comando para iniciar a aplicação
+ENTRYPOINT ["dotnet", "ProjetoFaturacao.dll"]

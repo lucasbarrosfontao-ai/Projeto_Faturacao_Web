@@ -1,0 +1,26 @@
+# ESTÁGIO 1: Build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+# Copiar o ficheiro de projeto e restaurar dependências
+COPY ["WorkerProjetoFaturacao.csproj", "./"]
+RUN dotnet restore "WorkerProjetoFaturacao.csproj"
+
+# Copiar o resto do código
+COPY . .
+
+# Publicar o Worker
+RUN dotnet publish "WorkerProjetoFaturacao.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+# ESTÁGIO 2: Runtime
+# Usamos 'runtime' em vez de 'aspnet' porque o Worker não precisa de servidor web (Kestrel)
+FROM mcr.microsoft.com/dotnet/runtime:8.0 AS final
+WORKDIR /app
+
+# Copiar os ficheiros publicados
+COPY --from=build /app/publish .
+
+# O Worker não precisa de EXPOSE porque não recebe conexões externas, 
+# ele apenas "consome" do RabbitMQ e liga-se à BD.
+
+ENTRYPOINT ["dotnet", "WorkerProjetoFaturacao.dll"]

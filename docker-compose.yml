@@ -4,14 +4,12 @@ services:
     container_name: projeto_faturacao_db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: "admin"
+      MYSQL_ROOT_PASSWORD: "admin" # Senha do Root
       MYSQL_DATABASE: "projeto_faturacao_db"
-      MYSQL_USER: "user"
-      MYSQL_PASSWORD: "user123"
     ports:
       - "3306:3306"
     volumes:
-      - ./sql:/docker-entrypoint-initdb.d
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
       - db_data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
@@ -37,8 +35,8 @@ services:
 
   app:
     build:
-      context: .
-      dockerfile: ProjetoFaturacao/Dockerfile
+      context: ./ProjetoFaturacao
+      dockerfile: dockerfile
     container_name: projeto_faturacao_app
     depends_on:
       db:
@@ -48,13 +46,16 @@ services:
     environment:
       - ConnectionStrings__DefaultConnection=Server=db;Database=projeto_faturacao_db;Uid=root;Pwd=admin;
       - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+      - ASPNETCORE_ENVIRONMENT=Development 
     ports:
       - "8080:8080"
 
   worker:
     build:
-      context: .
-      dockerfile: WorkerProjetoFaturacao/Dockerfile
+      context: ./WorkerProjetoFaturacao/
+      dockerfile: dockerfile
     container_name: projeto_faturacao_worker
     depends_on:
       db:
@@ -62,8 +63,11 @@ services:
       rabbitmq:
         condition: service_healthy
     environment:
-      - ConnectionStrings__DefaultConnection=Server=db;Database=projeto_faturacao_db;Uid=root;Pwd=admin;
+      - ConnectionStrings__DefaultConnection=Server=db;Database=projeto_faturacao_db;Uid=root;Pwd=${DB_PASSWORD}
       - RABBITMQ_HOST=rabbitmq
-
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
 volumes:
   db_data:

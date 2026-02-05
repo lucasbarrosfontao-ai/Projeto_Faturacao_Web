@@ -6,6 +6,7 @@
 @inject ValidationService ValidationService
 @inject ApplicationDbContext DbContext
 @inject NavigationManager Navigation
+@inject RabbitMQService RabbitMQService
 
 <PageTitle>Inserir Fatura</PageTitle>
 
@@ -274,6 +275,37 @@
 
             await DbContext.SaveChangesAsync();
             await transaction.CommitAsync();
+
+            // --- NOVO: ENVIO PARA O RABBITMQ ---
+            try 
+            {
+                // Precisamos do email do cliente para enviar o PDF. 
+                // Como só temos o ID, vamos buscar o objeto do cliente à nossa lista.
+                var clienteData = clients.FirstOrDefault(c => c.Id_Cliente == selectedClientId);
+
+                var mensagem = new FaturaMessage
+                {
+                    Id_Fatura = newInvoice.Id_Fatura, // O ID gerado pelo MySQL
+                    EmailCliente = clienteData!.Email ?? "", // O email para onde o Worker enviará
+                    NomeCliente = clienteData!.Nome ?? "Cliente"
+                };
+
+                // Envia para a fila do RabbitMQ
+                await RabbitMQService.EnviarFaturaParaFila(mensagem);
+                
+                await JSRuntime.InvokeVoidAsync("alert", "Fatura inserida e enviada para processamento de email!");
+            }
+            catch (Exception exRabbit)
+            {
+                // Se o RabbitMQ falhar, a fatura já está gravada na BD, 
+                // apenas avisamos que o email pode atrasar.
+                await JSRuntime.InvokeVoidAsync("alert", "Fatura gravada, mas erro ao agendar email: " + exRabbit.Message);
+            }
+            // ------------------------------------
+
+            invoiceItems.Clear();
+            invoiceNumber = "";
+            selectedClientId = 0;
 
             await JSRuntime.InvokeVoidAsync("alert", "Fatura inserida com sucesso!");
             

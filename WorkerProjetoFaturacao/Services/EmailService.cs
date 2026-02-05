@@ -8,7 +8,10 @@ public class EmailService
     public EmailService(IConfiguration config)
     {
         _config = config;
+        var user = _config["SMTP_USER"];
+            Console.WriteLine($"Tentando SMTP com o utilizador: {user}");
     }
+    
 
     public async Task EnviarFaturaEmailAsync(string emailDestinatario, string nomeCliente, byte[] pdfBytes, string numeroFatura)
     {
