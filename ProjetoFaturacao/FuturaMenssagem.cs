@@ -1,9 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 public class FaturaMessage
 {
-    
-    [Key]
-    public int FaturaId { get; set; }
-    [Required]
-    public required string EmailCliente { get; set; }
+    public int Id_Fatura { get; set; }
+    public string EmailCliente { get; set; } = string.Empty;
+    public string NomeCliente { get; set; } = string.Empty;
 }
