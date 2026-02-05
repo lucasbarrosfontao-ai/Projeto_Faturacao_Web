@@ -4,7 +4,7 @@
 @inject NavigationManager Navigation;
 
 @inject ApplicationDbContext DbContext
-@inject ValidationService ValidationService // Add this injection
+@inject ValidationService ValidationService // add this inject
 
 @page "/fornecedor/guardar/{id:int?}"
 
@@ -96,7 +96,7 @@ else
     private async Task HandleValidSubmit()
     {
         validationErrors.Clear();
-        var errors = ValidationService.ValidatePerson(fornecedor.NIPC, fornecedor.Nome_Empresa, fornecedor.Contato, fornecedor.Codigo_Postal, fornecedor.Email);
+        var errors = ValidationService.ValidarPessoa(fornecedor.NIPC, fornecedor.Nome_Empresa, fornecedor.Contato, fornecedor.Codigo_Postal, fornecedor.Email);
         if (errors.Any())
         {
             validationErrors = errors;

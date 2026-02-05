@@ -1,13 +1,12 @@
-@using Microsoft.AspNetCore.Components;
-@using Microsoft.EntityFrameworkCore;
-@using ProjetoFaturacao.Models;
-@inject NavigationManager Navigation;
+@page "/produto/guardar/{id:int?}"
 
+@using Microsoft.AspNetCore.Components
+@using Microsoft.EntityFrameworkCore
+@using ProjetoFaturacao.Models
+@inject NavigationManager Navigation
 @inject ApplicationDbContext DbContext
 @inject IJSRuntime JSRuntime
 @inject ValidationService ValidationService
-
-@page "/produto/guardar/{id:int?}"
 
 <PageTitle>Guardar Produto</PageTitle>
 
@@ -24,11 +23,10 @@ else if (fornecedores == null || fornecedores.Count == 0)
 }
 else
 {
-    <h1>Guardar Produto</h1>
+    <h3>Guardar Produto</h3>
 
     <EditForm Model="produto" OnValidSubmit="HandleValidSubmit">
         <DataAnnotationsValidator />
-        <ValidationSummary />
 
         @if (validationErrors.Any())
         {
@@ -45,10 +43,10 @@ else
         <div class="mb-3">
             <label for="fornecedor" class="form-label">Fornecedor</label>
             <InputSelect id="fornecedor" class="form-control" @bind-Value="produto.Id_Fornecedor">
-                <option value="">Selecione um fornecedor</option>
-                @foreach (var fornecedor in fornecedores)
+                <option value="0">Selecione um fornecedor</option>
+                @foreach (var f in fornecedores)
                 {
-                    <option value="@fornecedor.Id_Fornecedor">@fornecedor.Nome_Empresa</option>
+                    <option value="@f.Id_Fornecedor">@f.Nome_Empresa</option>
                 }
             </InputSelect>
             <ValidationMessage For="@(() => produto.Id_Fornecedor)" />
@@ -70,63 +68,37 @@ else
             <InputTextArea id="descricao" class="form-control" @bind-Value="produto.Descricao" />
         </div>
 
-        <div class="mb-3">
-            <label for="precoCusto" class="form-label">Preço Custo</label>
-            <InputNumber id="precoCusto" class="form-control" @bind-Value="produto.Preco_Custo" step="0.01" />
-            <ValidationMessage For="@(() => produto.Preco_Custo)" />
-        </div>
-
-        <div class="mb-3">
-            <label for="precoVenda" class="form-label">Preço Venda</label>
-            <InputNumber id="precoVenda" class="form-control" @bind-Value="produto.Preco_Venda" step="0.01" />
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="precoCusto" class="form-label">Preço Custo</label>
+                <InputNumber id="precoCusto" class="form-control" @bind-Value="produto.Preco_Custo" step="0.01" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="precoVenda" class="form-label">Preço Venda</label>
+                <InputNumber id="precoVenda" class="form-control" @bind-Value="produto.Preco_Venda" step="0.01" />
+            </div>
         </div>
 
         <div class="mb-3">
             <label for="unidadeMedida" class="form-label">Unidade de Medida</label>
             <InputSelect id="unidadeMedida" class="form-control" @bind-Value="produto.Unidade_Medida">
-                <option value="">-- Selecione uma unidade --</option>
-                
-                <optgroup label="Comprimento">
-                    <option value="mm">Milímetro (mm)</option>
-                    <option value="cm">Centímetro (cm)</option>
-                    <option value="m">Metro (m)</option>
-                    <option value="km">Quilómetro (km)</option>
-                </optgroup>
-
-                <optgroup label="Volume">
-                    <option value="ml">Mililitro (ml)</option>
-                    <option value="cl">Centilitro (cl)</option>
-                    <option value="l">Litro (l)</option>
-                    <option value="kl">Quilolitro (kl)</option>
-                </optgroup>
-
-                <optgroup label="Massa/Peso">
-                    <option value="mg">Miligrama (mg)</option>
-                    <option value="g">Grama (g)</option>
-                    <option value="kg">Quilograma (kg)</option>
-                    <option value="t">Tonelada (t)</option>
-                </optgroup>
-
-                <optgroup label="Outros">
-                    <option value="un">Unidade (un)</option>
-                    <option value="par">Par</option>
-                    <option value="cx">Caixa</option>
-                    <option value="m2">Metro Quadrado (m²)</option>
-                </optgroup>
+                <option value="">-- Selecione --</option>
+                <optgroup label="Comprimento"><option value="mm">mm</option><option value="cm">cm</option><option value="m">m</option></optgroup>
+                <optgroup label="Volume"><option value="ml">ml</option><option value="l">l</option></optgroup>
+                <optgroup label="Massa"><option value="g">g</option><option value="kg">kg</option></optgroup>
+                <optgroup label="Outros"><option value="un">Unidade</option><option value="cx">Caixa</option></optgroup>
             </InputSelect>
-            <ValidationMessage For="@(() => produto.Unidade_Medida)" class="text-danger" />
         </div>
 
-        <div class="mb-3">
-            <label for="iva" class="form-label">IVA (%)</label>
-            <InputNumber id="iva" class="form-control" @bind-Value="produto.IVA" step="0.01" />
-            <ValidationMessage For="@(() => produto.IVA)" />
-        </div>
-
-        <div class="mb-3">
-            <label for="stockAtual" class="form-label">Stock Atual</label>
-            <InputNumber id="stockAtual" class="form-control" @bind-Value="produto.Stock_Atual" step="1" />
-            <ValidationMessage For="@(() => produto.Stock_Atual)" />
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="iva" class="form-label">IVA (%)</label>
+                <InputNumber id="iva" class="form-control" @bind-Value="produto.IVA" step="0.01" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="stockAtual" class="form-label">Stock Atual</label>
+                <InputNumber id="stockAtual" class="form-control" @bind-Value="produto.Stock_Atual" />
+            </div>
         </div>
 
         <button type="submit" class="btn btn-primary">Guardar</button>
@@ -135,11 +107,10 @@ else
 }
 
 @code {
-    [Parameter]
-    public int? Id { get; set; }
+    [Parameter] public int? Id { get; set; }
 
     private Produto produto = new Produto();
-    private List<Fornecedor>? fornecedores;
+    private List<Fornecedor> fornecedores = new();
     private bool isLoading = true;
     private List<string> validationErrors = new();
 
@@ -151,6 +122,10 @@ else
         {
             produto = await DbContext.Produtos.FindAsync(Id.Value) ?? new Produto();
         }
+        else
+        {
+            produto = new Produto { IVA = 23 }; // Valor padrão opcional
+        }
 
         isLoading = false;
     }
@@ -158,54 +133,42 @@ else
     private async Task HandleValidSubmit()
     {
         validationErrors.Clear();
-        var validation = ValidationService.ValidateProduto(
+
+        // CHAMADA AO SERVIÇO (Sincronizada com o passo anterior)
+        var result = ValidationService.ValidarProduto(
             produto.Nome, produto.Referencia, produto.Id_Fornecedor, 
             produto.Preco_Custo, produto.Preco_Venda, produto.Unidade_Medida, 
             produto.IVA, produto.Stock_Atual);
 
-        if (validation.Errors.Any())
+        if (result.Erros.Any())
         {
-            validationErrors = validation.Errors;
-            StateHasChanged();
+            validationErrors = result.Erros;
             return;
         }
 
-        // Handle confirmations
-        foreach (var confirmation in validation.Confirmations)
+        // Tratar confirmações (ex: Preço Custo > Venda)
+        foreach (var msg in result.Confirmacoes)
         {
-            var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", confirmation);
-            if (!confirmed)
-                return; // Cancel save
+            bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", msg);
+            if (!confirmed) return;
         }
 
         try
         {
-            // Proceed to save
             if (produto.Id_Produto == 0)
-            {
                 DbContext.Produtos.Add(produto);
-            }
             else
-            {
                 DbContext.Produtos.Update(produto);
-            }
+
             await DbContext.SaveChangesAsync();
             Navigation.NavigateTo("/Produtos/Ver");
         }
         catch (Exception ex)
         {
-            validationErrors.Add($"Erro ao guardar produto: {ex.Message}");
-            StateHasChanged();
+            validationErrors.Add($"Erro ao gravar: {ex.Message}");
         }
     }
 
-    private void Cancelar()
-    {
-        Navigation.NavigateTo("/Produtos/Ver");
-    }
-
-    private void IrParaFornecedores()
-    {
-        Navigation.NavigateTo("/fornecedor/guardar");
-    }
+    private void Cancelar() => Navigation.NavigateTo("/Produtos/Ver");
+    private void IrParaFornecedores() => Navigation.NavigateTo("/fornecedor/guardar");
 }

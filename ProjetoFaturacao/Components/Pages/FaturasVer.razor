@@ -1,0 +1,241 @@
+@page "/Faturas/Ver"
+@using Microsoft.AspNetCore.Components
+@using Microsoft.EntityFrameworkCore
+@using ProjetoFaturacao.Models
+@inject NavigationManager Navigation
+@inject ApplicationDbContext DbContext
+
+<PageTitle>Ver Faturas</PageTitle>
+
+<div class="container-fluid">
+    <!-- CABEÇALHO E PESQUISA (Equivalente ao BtnPesquisar_Click) -->
+    <div class="row mb-3 align-items-end">
+        <div class="col-md-6">
+            <h3>Consultar Faturas</h3>
+        </div>
+        <div class="col-md-6">
+            <div class="input-group justify-content-end">
+                <!-- Select (CbbCamposPesquisa) -->
+                <select class="form-select" style="max-width: 150px;" @bind="campoPesquisa">
+                    <option value="Numero_Fatura">Número</option>
+                    <option value="Id_Cliente">ID Cliente</option>
+                    <option value="Estado">Estado</option>
+                </select>
+
+                <!-- TextBox (TxtPesquisa) -->
+                <input type="text" class="form-control" style="max-width: 250px;" 
+                       placeholder="Valor a pesquisar..." @bind="textoPesquisa" />
+
+                <!-- Botão Pesquisar -->
+                <button class="btn btn-primary" @onclick="Pesquisar">
+                    <i class="bi bi-search"></i> Pesquisar
+                </button>
+                
+                <!-- Botão Limpar -->
+                <button class="btn btn-secondary" @onclick="Limpar">Limpar</button>
+
+                <!-- Criar Nova Fatura -->
+                <button class="btn btn-success" @onclick="Novafatura"> Nova Fatura </button>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- GRID 1: LISTA DE FATURAS (DGVFaturas) -->
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white">Faturas</div>
+        <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+            <table class="table table-striped table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Número</th>
+                        <th>Cliente</th>
+                        <th>Data Emissão</th>
+                        <th>Total Líquido</th>
+                        <th>Total IVA</th>
+                        <th>Total a Pagar</th>
+                        <th>Estado</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (listaFaturas == null)
+                    {
+                        <tr><td colspan="9" class="text-center">Carregando...</td></tr>
+                    }
+                    else if (listaFaturas.Count == 0)
+                    {
+                        <tr><td colspan="9" class="text-center">Nenhuma fatura encontrada.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var fatura in listaFaturas)
+                        {
+                            <!-- Se esta linha estiver selecionada, pinta de azul claro -->
+                            <tr class="@(fatura.Id_Fatura == idFaturaSelecionada ? "table-active border border-primary" : "")">
+                                <td>@fatura.Id_Fatura</td>
+                                <td>@fatura.Numero_Fatura</td>
+                                <td>
+                                    <!-- Exibe o nome se o objeto Cliente veio preenchido -->
+                                    @(fatura.Cliente != null ? fatura.Cliente.Nome : fatura.Id_Cliente)
+                                </td>
+                                <td>@fatura.Data_Emissao.ToShortDateString()</td>
+                                <td>@fatura.Valor_Total_Liquido.ToString("C")</td>
+                                <td>@fatura.Valor_Total_IVA.ToString("C")</td>
+                                <td>@fatura.Valor_Total_Pagar.ToString("C")</td>
+                                <td>@fatura.Estado</td>
+                                <td>
+                                    <!-- Botão "Ver Linhas" (Substitui DGVFaturas_CellContentClick) -->
+                                    <button class="btn btn-sm btn-info text-white" 
+                                            @onclick="() => VerLinhas(fatura.Id_Fatura)">
+                                        Ver Linhas
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- GRID 2: LINHAS DA FATURA (DGVLinhas / Grade2) -->
+    @if (listaLinhas != null)
+    {
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                Linhas da Fatura Selecionada (ID: @idFaturaSelecionada)
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered mb-0 bg-white">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID Linha</th>
+                            <th>Produto</th>
+                            <th>Qtd</th>
+                            <th>Preço Unit.</th>
+                            <th>Taxa IVA</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (listaLinhas.Count == 0)
+                        {
+                             <tr><td colspan="6" class="text-center">Esta fatura não tem linhas.</td></tr>
+                        }
+                        else
+                        {
+                            @foreach (var linha in listaLinhas)
+                            {
+                                <tr>
+                                    <td>@linha.Id_Linha</td>
+                                    <td>
+                                        <!-- Tenta mostrar o nome do produto se carregado -->
+                                        @(linha.Produto != null ? linha.Produto.Nome : linha.Id_Produto)
+                                    </td>
+                                    <td>@linha.Quantidade</td>
+                                    <td>@linha.Preco_Unitario.ToString("C")</td>
+                                    <td>@linha.Taxa_IVA.ToString("0.##")%</td>
+                                    <td>@linha.Subtotal.ToString("C")</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    // --- VARIÁVEIS DE ESTADO (Dados da tela) ---
+    private List<Fatura>? listaFaturas;
+    private List<LinhaFatura>? listaLinhas; // Será preenchido ao clicar
+    
+    // --- VARIÁVEIS DE CONTROLE ---
+    private int? idFaturaSelecionada;
+    private string campoPesquisa = "Numero_Fatura"; // Valor padrão do combobox
+    private string textoPesquisa = "";
+
+    // 1. EVENTO LOAD (CarregarDados)
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarFaturasIniciais();
+    }
+
+    private async Task CarregarFaturasIniciais()
+    {
+        // SELECT * FROM Faturas (mas com EF Core)
+        // Usamos .Include("Cliente") para evitar erro no required Cliente
+        listaFaturas = await DbContext.Faturas
+                                      .Include(f => f.Cliente)
+                                      .OrderByDescending(f => f.Id_Fatura)
+                                      .ToListAsync();
+        
+        listaLinhas = null; // Limpa o grid de baixo
+    }
+
+    // 2. PESQUISAR (Tradução de FaturasVerCMD.PesquisarFaturas)
+    private async Task Pesquisar()
+    {
+        if (string.IsNullOrWhiteSpace(textoPesquisa))
+        {
+            await CarregarFaturasIniciais();
+            return;
+        }
+
+        // Começa a query
+        var query = DbContext.Faturas.Include(f => f.Cliente).AsQueryable();
+
+        // Tradução do seu SQL "WHERE {coluna} LIKE %valor%"
+        switch (campoPesquisa)
+        {
+            case "Numero_Fatura":
+                query = query.Where(f => f.Numero_Fatura.Contains(textoPesquisa));
+                break;
+                
+            case "Id_Cliente":
+                // Verifica se é número, pois Id_Cliente é int
+                if (int.TryParse(textoPesquisa, out int idBusca))
+                {
+                    query = query.Where(f => f.Id_Cliente == idBusca);
+                }
+                break;
+                
+            case "Estado":
+                query = query.Where(f => f.Estado.Contains(textoPesquisa));
+                break;
+        }
+
+        listaFaturas = await query.ToListAsync();
+        listaLinhas = null; // Esconde o grid de detalhes ao pesquisar nova lista
+    }
+
+    private void Novafatura()
+    {
+        Navigation.NavigateTo("/fatura/guardar");
+    }
+
+
+
+    private async Task Limpar()
+    {
+        textoPesquisa = "";
+        await CarregarFaturasIniciais();
+    }
+
+    // 3. CARREGAR LINHAS (Tradução de FaturasVerCMD.CarregarDados)
+    // No seu CMD original: "SELECT * FROM linhas_fatura Where id_fatura = @idfatura"
+    private async Task VerLinhas(int idFatura)
+    {
+        idFaturaSelecionada = idFatura;
+
+        // Aqui fazemos a query no banco de dados para buscar as linhas
+        // Também incluimos o Produto para mostrar o Nome em vez de só o ID
+        listaLinhas = await DbContext.Set<LinhaFatura>()
+                                     .Include(l => l.Produto) 
+                                     .Where(l => l.Id_Fatura == idFatura)
+                                     .ToListAsync();
+    }
+}

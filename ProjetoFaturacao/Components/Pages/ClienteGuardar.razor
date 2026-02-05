@@ -91,7 +91,7 @@ else
     private async Task GuardarCliente()
     {
         validationErrors.Clear();
-        var errors = ValidationService.ValidatePerson(cliente.NIF, cliente.Nome, cliente.Contato, cliente.Codigo_Postal, cliente.Email);
+        var errors = ValidationService.ValidarPessoa(cliente.NIF, cliente.Nome, cliente.Contato, cliente.Codigo_Postal, cliente.Email);
         if (errors.Any())
         {
             validationErrors = errors;

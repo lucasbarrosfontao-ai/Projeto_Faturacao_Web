@@ -1,0 +1,307 @@
+@page "/Faturas/Criar"
+
+@using Microsoft.EntityFrameworkCore
+@using ProjetoFaturacao.Models 
+@inject Microsoft.JSInterop.IJSRuntime JSRuntime
+@inject ValidationService ValidationService
+@inject ApplicationDbContext DbContext
+@inject NavigationManager Navigation
+
+<PageTitle>Inserir Fatura</PageTitle>
+
+<div class="container-fluid">
+    <h3>Nova Fatura</h3>
+
+    <!-- 1. DEFINIÇÕES (Cabeçalho) -->
+    <div class="card mb-3">
+        <div class="card-header fw-bold">Definições</div>
+        <div class="card-body">
+            <div class="row g-3">
+                <!-- Cliente -->
+                <div class="col-md-4">
+                    <label class="form-label">Cliente:</label>
+                    <select class="form-select" @bind="selectedClientId">
+                        <option value="0">-- Selecione um Cliente --</option>
+                        @foreach (var cli in clients)
+                        {
+                            <option value="@cli.Id_Cliente">@cli.Nome</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Número da Fatura -->
+                <div class="col-md-4">
+                    <label class="form-label">Número da Fatura:</label>
+                    <input type="text" class="form-control" @bind="invoiceNumber" />
+                </div>
+
+                <!-- Data -->
+                <div class="col-md-4">
+                    <label class="form-label">Data da Fatura:</label>
+                    <input type="date" class="form-control" @bind="invoiceDate" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. SELECIONAR PRODUTO -->
+    <div class="card mb-3">
+        <div class="card-header fw-bold">Selecionar Produto</div>
+        <div class="card-body">
+            <div class="row align-items-end g-3">
+                <!-- Produto -->
+                <div class="col-md-4">
+                    <label class="form-label">Produto:</label>
+                    <select class="form-select" @onchange="OnProductChanged">
+                        <option value="0">-- Selecione --</option>
+                        @foreach (var prod in products)
+                        {
+                            <option value="@prod.Id_Produto">@prod.Nome</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Quantidade -->
+                <div class="col-md-2">
+                    <label class="form-label">Quantidade:</label>
+                    <input type="number" class="form-control" @bind="quantity" min="1" />
+                </div>
+
+                <!-- Preço -->
+                <div class="col-md-3">
+                    <label class="form-label">Preço Unitário (€):</label>
+                    <input type="number" class="form-control" @bind="unitPrice" step="0.01" />
+                </div>
+
+                <!-- Botão Adicionar -->
+                <div class="col-md-3">
+                    <button class="btn btn-secondary w-100" @onclick="AddProductToList">Adicionar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. PRODUTOS SELECIONADOS (Grid) -->
+    <div class="card mb-3">
+        <div class="card-header fw-bold">Produtos Selecionados</div>
+        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+            <table class="table table-bordered table-striped mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Cód.</th>
+                        <th>Nome</th>
+                        <th>Quantidade</th>
+                        <th>Preço</th>
+                        <th>IVA (%)</th>
+                        <th>Total sem IVA</th>
+                        <th class="text-center">Eliminar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (invoiceItems.Count == 0)
+                    {
+                        <tr><td colspan="7" class="text-center text-muted">A lista está vazia.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in invoiceItems)
+                        {
+                            <tr>
+                                <td>@item.ProductId</td>
+                                <td>@item.ProductName</td>
+                                <td>@item.Quantity</td>
+                                <td>@item.UnitPrice.ToString("C")</td>
+                                <td>@item.VatRate.ToString("0.##")%</td>
+                                <td>@item.RowSubtotal.ToString("C")</td>
+                                <td class="text-center">
+                                    <button class="btn btn-danger btn-sm" @onclick="() => RemoveItem(item)">
+                                        X
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 4. TOTAIS -->
+    <div class="card mb-3">
+        <div class="card-body bg-light">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-1">Valor dos Produtos: <strong>@TotalNet.ToString("C")</strong></p>
+                    <p class="mb-1">Valor do IVA: <strong>@TotalVat.ToString("C")</strong></p>
+                    <h4 class="text-primary mt-2">Total a pagar: <strong>@TotalPayable.ToString("C")</strong></h4>
+                </div>
+                <div class="col-md-6 text-end align-self-end">
+                    <button class="btn btn-lg btn-light border me-2" @onclick="Exit">Sair</button>
+                    <button class="btn btn-lg btn-primary" @onclick="SaveInvoice">Guardar Fatura</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Cliente> clients = new();
+    private List<Produto> products = new();
+    private List<InvoiceItemViewModel> invoiceItems = new();
+
+    private int selectedClientId;
+    private string invoiceNumber = "";
+    private DateTime invoiceDate = DateTime.Now;
+
+    private int selectedProductId;
+    private Produto? currentProduct;
+    private int quantity = 0;
+    private decimal unitPrice = 0;
+
+    private decimal TotalNet => invoiceItems.Sum(x => x.RowSubtotal);
+    private decimal TotalVat => invoiceItems.Sum(x => x.VatAmount);
+    private decimal TotalPayable => TotalNet + TotalVat;
+
+    protected override async Task OnInitializedAsync()
+    {
+        clients = await DbContext.Clientes.ToListAsync();
+        products = await DbContext.Produtos.ToListAsync();
+    }
+
+    private void OnProductChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int id) && id > 0)
+        {
+            selectedProductId = id;
+            currentProduct = products.FirstOrDefault(p => p.Id_Produto == id);
+
+            if (currentProduct != null)
+            {
+                unitPrice = currentProduct.Preco_Venda;
+                quantity = 1;
+            }
+        }
+        else
+        {
+            selectedProductId = 0;
+            currentProduct = null;
+            unitPrice = 0;
+            quantity = 0;
+        }
+    }
+
+    private async Task AddProductToList()
+    {
+        // AJUSTE: Chamada para o método em Português
+        if (!ValidationService.VerificacaoFaturas.VerificarCamposInserirProduto(selectedProductId, unitPrice, quantity, out string error))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", error);
+            return;
+        }
+
+        if (currentProduct == null) return;
+
+        invoiceItems.Add(new InvoiceItemViewModel
+        {
+            ProductId = currentProduct.Id_Produto,
+            ProductName = currentProduct.Nome,
+            Quantity = quantity,
+            UnitPrice = unitPrice,
+            VatRate = currentProduct.IVA 
+        });
+        
+        quantity = 0;
+    }
+
+    private async Task RemoveItem(InvoiceItemViewModel item)
+    {
+        bool confirm = await JSRuntime.InvokeAsync<bool>("confirm", "Tem certeza que deseja eliminar este item?");
+        if (confirm)
+        {
+            invoiceItems.Remove(item);
+        }
+    }
+
+    private async Task SaveInvoice()
+    {
+        // AJUSTE: Chamada para o método em Português
+        if (!ValidationService.VerificacaoFaturas.VerificarCamposFatura(selectedClientId, invoiceNumber, invoiceDate, invoiceItems.Count, out string error))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", error);
+            return;
+        }
+
+        using var transaction = await DbContext.Database.BeginTransactionAsync();
+
+        try
+        {
+            var newInvoice = new Fatura
+            {
+                Id_Cliente = selectedClientId,
+                Cliente = null!,
+                Numero_Fatura = invoiceNumber,
+                Data_Emissao = invoiceDate,
+                Valor_Total_Liquido = TotalNet,
+                Valor_Total_IVA = TotalVat,
+                Valor_Total_Pagar = TotalPayable,
+                Estado = "Emitida",
+                LinhasFatura = new List<LinhaFatura>()
+            };
+
+            DbContext.Faturas.Add(newInvoice);
+            await DbContext.SaveChangesAsync(); 
+
+            foreach (var item in invoiceItems)
+            {
+                var newLine = new LinhaFatura
+                {
+                    Id_Fatura = newInvoice.Id_Fatura,
+                    Id_Produto = item.ProductId,
+                    Quantidade = item.Quantity,
+                    Preco_Unitario = item.UnitPrice,
+                    Taxa_IVA = item.VatRate,
+                    Subtotal = item.RowSubtotal
+                };
+                DbContext.Add(newLine);
+
+                var productDb = await DbContext.Produtos.FindAsync(item.ProductId);
+                if (productDb != null)
+                {
+                    productDb.Stock_Atual -= item.Quantity;
+                    DbContext.Produtos.Update(productDb);
+                }
+            }
+
+            await DbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            await JSRuntime.InvokeVoidAsync("alert", "Fatura inserida com sucesso!");
+            
+            invoiceItems.Clear();
+            invoiceNumber = "";
+            selectedClientId = 0;
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            await JSRuntime.InvokeVoidAsync("alert", "Erro ao inserir fatura: " + ex.Message);
+        }
+    }
+
+    private void Exit()
+    {
+        Navigation.NavigateTo("/"); 
+    }
+
+    public class InvoiceItemViewModel
+    {
+        public int ProductId { get; set; }
+        public string ProductName { get; set; } = "";
+        public int Quantity { get; set; }
+        public decimal UnitPrice { get; set; }
+        public decimal VatRate { get; set; }
+
+        public decimal RowSubtotal => Quantity * UnitPrice;
+        public decimal VatAmount => RowSubtotal * (VatRate / 100);
+    }
+}

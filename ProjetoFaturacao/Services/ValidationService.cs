@@ -3,112 +3,171 @@ using System.Text.RegularExpressions;
 
 public class ValidationService
 {
-    #region Validar Pessoas
+    
+    #region Validação de Pessoas (Cliente/Fornecedor)
 
-    // Validate NI (NIF/NIPC) using modulo 11
-    public bool IsValidNI(string ni)
+    // Valida NIF/NIPC usando algoritmo módulo 11
+    public bool ValidarNIF(string nif)
     {
-        if (string.IsNullOrWhiteSpace(ni) || !ni.All(char.IsDigit))
+        if (string.IsNullOrWhiteSpace(nif) || !nif.All(char.IsDigit))
             return false;
 
-        if (ni.Length != 9) return false; // Keep length check
+        if (nif.Length != 9) return false;
 
-        int[] weights = { 9, 8, 7, 6, 5, 4, 3, 2 };
-        int sum = 0;
+        int[] pesos = { 9, 8, 7, 6, 5, 4, 3, 2 };
+        int soma = 0;
         for (int i = 0; i < 8; i++)
         {
-            sum += (ni[i] - '0') * weights[i];
+            soma += (nif[i] - '0') * pesos[i];
         }
-        int remainder = sum % 11;
-        int checkDigit = remainder < 2 ? 0 : 11 - remainder;
-        return checkDigit == (ni[8] - '0');
+        int resto = soma % 11;
+        int digitoControlo = resto < 2 ? 0 : 11 - resto;
+        return digitoControlo == (nif[8] - '0');
     }
 
-    // Validate name (mandatory, not empty)
-    public bool IsValidName(string name)
+    public bool ValidarNome(string nome)
     {
-        return !string.IsNullOrWhiteSpace(name);
+        return !string.IsNullOrWhiteSpace(nome);
     }
 
-    // Validate postal code (optional, format XXXX-XXX)
-    public bool IsValidPostalCode(string? postalCode)
+    public bool ValidarCodigoPostal(string? codigoPostal)
     {
-        if (string.IsNullOrWhiteSpace(postalCode)) return true; // Optional
-        return Regex.IsMatch(postalCode, @"^\d{4}-\d{3}$");
+        if (string.IsNullOrWhiteSpace(codigoPostal)) return true; // Opcional
+        return Regex.IsMatch(codigoPostal, @"^\d{4}-\d{3}$");
     }
 
-    // Validate phone (optional, any national/international, 7-15 digits)
-    public bool IsValidPhone(string? phone)
+    public bool ValidarTelefone(string? telefone)
     {
-        if (string.IsNullOrWhiteSpace(phone)) return true; // Optional
-        string cleaned = Regex.Replace(phone, @"[^\d+]", ""); // Remove non-digits except +
-        return Regex.IsMatch(cleaned, @"^[\+]?\d{7,15}$"); // Starts with optional +, 7-15 digits
+        if (string.IsNullOrWhiteSpace(telefone)) return true; // Opcional
+        string limpo = Regex.Replace(telefone, @"[^\d+]", ""); 
+        return Regex.IsMatch(limpo, @"^[\+]?\d{7,15}$");
     }
 
-    // Validate email (optional)
-    public bool IsValidEmail(string? email)
+    public bool ValidarEmail(string? email)
     {
-        if (string.IsNullOrWhiteSpace(email)) return true; // Optional
+        if (string.IsNullOrWhiteSpace(email)) return true; // Opcional
         return new EmailAddressAttribute().IsValid(email);
     }
 
-    // Comprehensive validation for person (client/supplier)
-    public List<string> ValidatePerson(string ni, string name, string? contact, string? postalCode, string? email)
+    // Validação completa para a página de Clientes/Fornecedores
+    public List<string> ValidarPessoa(string nif, string nome, string? contato, string? codigoPostal, string? email)
     {
-        var errors = new List<string>();
+        var erros = new List<string>();
 
-        if (!IsValidNI(ni))
-            errors.Add("NI inválido (deve seguir o algoritmo módulo 11).");
+        if (!ValidarNIF(nif))
+            erros.Add("NIF/NIPC inválido (deve seguir o algoritmo módulo 11).");
 
-        if (!IsValidName(name))
-            errors.Add("Nome é obrigatório.");
+        if (!ValidarNome(nome))
+            erros.Add("Nome é obrigatório.");
 
-        if (!IsValidPhone(contact))
-            errors.Add("Contato inválido (formato português esperado).");
+        if (!ValidarTelefone(contato))
+            erros.Add("Contato inválido.");
 
-        if (!IsValidPostalCode(postalCode))
-            errors.Add("Código postal inválido (formato esperado: XXXX-XXX).");
+        if (!ValidarCodigoPostal(codigoPostal))
+            erros.Add("Código postal inválido (formato esperado: XXXX-XXX).");
 
-        if (!IsValidEmail(email))
-            errors.Add("Email inválido.");
+        if (!ValidarEmail(email))
+            erros.Add("Email inválido.");
 
-        return errors;
+        return erros;
     }
 
     #endregion
 
-    #region Validar Produtos
+    #region Validação de Produtos
 
-    public class ValidationResult
+    public class ResultadoValidacao
     {
-        public List<string> Errors { get; set; } = new();
-        public List<string> Confirmations { get; set; } = new();
+        public List<string> Erros { get; set; } = new();
+        public List<string> Confirmacoes { get; set; } = new();
     }
 
-    public ValidationResult ValidateProduto(string nome, string referencia, int idFornecedor, decimal precoCusto, decimal precoVenda, string unidadeMedida, decimal iva, int stock)
+    public ResultadoValidacao ValidarProduto(string nome, string referencia, int idFornecedor, decimal precoCusto, decimal precoVenda, string unidadeMedida, decimal iva, int stock)
     {
-        var result = new ValidationResult();
+        var resultado = new ResultadoValidacao();
 
-        // Mandatory fields
         if (string.IsNullOrWhiteSpace(nome))
-            result.Errors.Add("Nome é obrigatório.");
+            resultado.Erros.Add("Nome é obrigatório.");
         if (string.IsNullOrWhiteSpace(referencia))
-            result.Errors.Add("Referência é obrigatória.");
+            resultado.Erros.Add("Referência é obrigatória.");
         if (idFornecedor <= 0)
-            result.Errors.Add("ID do fornecedor é obrigatório e deve ser válido.");
+            resultado.Erros.Add("ID do fornecedor é obrigatório.");
         if (precoCusto < 0)
-            result.Errors.Add("Preço de custo não pode ser negativo.");
+            resultado.Erros.Add("Preço de custo não pode ser negativo.");
         if (precoVenda < 0)
-            result.Errors.Add("Preço de venda não pode ser negativo.");
+            resultado.Erros.Add("Preço de venda não pode ser negativo.");
         if (string.IsNullOrWhiteSpace(unidadeMedida))
-            result.Errors.Add("Unidade de medida é obrigatória.");
-        // Confirmations
+            resultado.Erros.Add("Unidade de medida é obrigatória.");
+        
         if (stock < 0)
-            result.Confirmations.Add("O stock é negativo. Deseja confirmar?");
+            resultado.Confirmacoes.Add("O stock é negativo. Deseja confirmar?");
         if (precoCusto > precoVenda && precoVenda > 0)
-            result.Confirmations.Add("O preço de custo é maior que o preço de venda. Deseja confirmar?");
+            resultado.Confirmacoes.Add("O preço de custo é maior que o preço de venda. Deseja confirmar?");
 
-        return result;
+        return resultado;
+    }
+
+    #endregion
+
+    #region Validação de Faturas
+
+    public static class VerificacaoFaturas
+    {
+        public static bool VerificarCamposFatura(int idCliente, string numeroFatura, DateTime dataFatura, int qtdItens, out string mensagemErro)
+        {
+            mensagemErro = "";
+
+            if (idCliente <= 0)
+            {
+                mensagemErro = "Por favor, selecione um cliente.";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(numeroFatura))
+            {
+                mensagemErro = "Por favor, insira o número da fatura.";
+                return false;
+            }
+
+            if (dataFatura.Date > DateTime.Now.Date)
+            {
+                mensagemErro = "A data da fatura não pode ser futura.";
+                return false;
+            }
+
+            if (qtdItens <= 0)
+            {
+                mensagemErro = "A lista de compras está vazia. Adicione pelo menos um produto.";
+                return false;
+            }
+
+            return true;
+        }
+
+        public static bool VerificarCamposInserirProduto(int idProduto, decimal preco, int quantidade, out string mensagemErro)
+        {
+            mensagemErro = "";
+
+            if (idProduto <= 0)
+            {
+                mensagemErro = "Por favor, selecione um produto.";
+                return false;
+            }
+
+            if (preco <= 0)
+            {
+                mensagemErro = "O preço unitário deve ser maior que zero.";
+                return false;
+            }
+
+            if (quantidade <= 0)
+            {
+                mensagemErro = "A quantidade deve ser maior que zero.";
+                return false;
+            }
+
+            return true;
+        }
     }
 
     #endregion
