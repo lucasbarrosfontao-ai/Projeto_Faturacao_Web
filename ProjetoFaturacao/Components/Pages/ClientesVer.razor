@@ -1,99 +1,188 @@
-@using Microsoft.AspNetCore.Components;
-@using Microsoft.EntityFrameworkCore;
-@using ProjetoFaturacao.Models;
-
+@page "/Clientes/Ver"
+@using Microsoft.AspNetCore.Components
+@using Microsoft.EntityFrameworkCore
+@using ProjetoFaturacao.Models
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
 @inject ApplicationDbContext DbContext
 @inject NavigationManager Navigation
-@inject IJSRuntime JSRuntime
-
-@page "/Clientes/Ver"
 
 <PageTitle>Ver Clientes</PageTitle>
 
-<h1>Lista de Clientes</h1>
+<div class="container-fluid">
+    <!-- HEADER AND SEARCH SECTION -->
+    <div class="row mb-3 align-items-end">
+        <div class="col-md-6">
+            <h3>Consultar Clientes</h3>
+        </div>
+        <div class="col-md-6">
+            <div class="input-group justify-content-end">
+                <!-- Search Field Selection -->
+                <select class="form-select" style="max-width: 150px;" @bind="searchField">
+                    <option value="Nome">Nome</option>
+                    <option value="NIF">NIF</option>
+                    <option value="Email">Email</option>
+                    <option value="Localidade">Localidade</option>
+                </select>
 
-@if (clientes == null)
-{
-    <p><em>Carregando...</em></p>
-}
-else if (clientes.Count == 0)
-{
-    <p>Não há clientes registados.</p>
-    <button class="btn btn-primary" @onclick="IrParaCriar">Criar Novo Cliente</button>
-}
-else
-{
-    <table class="table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Nome</th>
-                <th>NIF</th>
-                <th>Contato</th>
-                <th>Email</th>
-                <th>Morada</th>
-                <th>Localidade</th>
-                <th>Código Postal</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var cliente in clientes)
-            {
-                <tr>
-                    <td>@cliente.Id_Cliente</td>
-                    <td>@cliente.Nome</td>
-                    <td>@cliente.NIF</td>
-                    <td>@cliente.Contato</td>
-                    <td>@cliente.Email</td>
-                    <td>@cliente.Morada</td>
-                    <td>@cliente.Localidade</td>
-                    <td>@cliente.Codigo_Postal</td>
-                    <td>
-                        <button class="btn btn-sm btn-primary" @onclick='() => EditarCliente(cliente.Id_Cliente)'>Editar</button>
-                        <button class="btn btn-sm btn-danger" @onclick="() => ConfirmarRemocao(cliente)">Eliminar</button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-    <button class="btn btn-primary" @onclick="IrParaCriar">Criar Novo Cliente</button>
-}
+                <!-- Search Text Input -->
+                <input type="text" class="form-control" style="max-width: 250px;" 
+                       placeholder="Valor a pesquisar..." @bind="searchText" />
+
+                <!-- Action Buttons -->
+                <button class="btn btn-primary" @onclick="Search">
+                    <i class="bi bi-search"></i> Pesquisar
+                </button>
+                
+                <button class="btn btn-secondary" @onclick="Clear">Limpar</button>
+
+                <button class="btn btn-success" @onclick="CreateNew">Novo Cliente</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRID: CLIENTS LIST -->
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white">Clientes Registados</div>
+        <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
+            <table class="table table-striped table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>NIF</th>
+                        <th>Contato</th>
+                        <th>Email</th>
+                        <th>Localidade</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (clientList == null)
+                    {
+                        <tr><td colspan="7" class="text-center">Carregando...</td></tr>
+                    }
+                    else if (clientList.Count == 0)
+                    {
+                        <tr><td colspan="7" class="text-center">Nenhum cliente encontrado.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var client in clientList)
+                        {
+                            <tr>
+                                <td>@client.Id_Cliente</td>
+                                <td class="fw-bold">@client.Nome</td>
+                                <td>@client.NIF</td>
+                                <td>@client.Contato</td>
+                                <td>@client.Email</td>
+                                <td>@client.Localidade</td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-primary me-1" 
+                                            @onclick="() => EditClient(client.Id_Cliente)">
+                                        Editar
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" 
+                                            @onclick="() => ConfirmDelete(client)">
+                                        Eliminar
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
 @code {
-    private List<Cliente>? clientes;
+    // --- STATE VARIABLES ---
+    private List<Cliente>? clientList;
+    
+    // --- CONTROL VARIABLES ---
+    private string searchField = "Nome"; 
+    private string searchText = "";
 
     protected override async Task OnInitializedAsync()
     {
-        clientes = await DbContext.Clientes.ToListAsync();
+        await LoadClients();
     }
 
-    private void EditarCliente(int id)
+    private async Task LoadClients()
     {
-        Navigation.NavigateTo($"/cliente/guardar/{id}");
+        clientList = await DbContext.Clientes
+                                   .OrderBy(c => c.Nome)
+                                   .ToListAsync();
     }
 
-    private void IrParaCriar()
+    private async Task Search()
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            await LoadClients();
+            return;
+        }
+
+        var query = DbContext.Clientes.AsQueryable();
+
+        switch (searchField)
+        {
+            case "Nome":
+                query = query.Where(c => c.Nome.Contains(searchText));
+                break;
+            case "NIF":
+                query = query.Where(c => c.NIF.Contains(searchText));
+                break;
+            case "Email":
+                query = query.Where(c => c.Email.Contains(searchText));
+                break;
+            case "Localidade":
+                query = query.Where(c => c.Localidade.Contains(searchText));
+                break;
+        }
+
+        clientList = await query.ToListAsync();
+    }
+
+    private async Task Clear()
+    {
+        searchText = "";
+        await LoadClients();
+    }
+
+    private void CreateNew()
     {
         Navigation.NavigateTo("/cliente/guardar");
     }
 
-    private async Task ConfirmarRemocao(Cliente cliente)
+    private void EditClient(int id)
     {
-        var confirmado = await JSRuntime.InvokeAsync<bool>("confirm", $"Tem certeza que deseja eliminar o cliente '{cliente.Nome}'?");
-        if (confirmado)
+        Navigation.NavigateTo($"/cliente/guardar/{id}");
+    }
+
+    private async Task ConfirmDelete(Cliente client)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
+            $"Tem certeza que deseja eliminar o cliente '{client.Nome}'?");
+            
+        if (confirmed)
         {
-            await RemoverCliente(cliente);
+            await DeleteClient(client);
         }
     }
 
-    private async Task RemoverCliente(Cliente cliente)
+    private async Task DeleteClient(Cliente client)
     {
-        if (cliente == null) return;
-
-        DbContext.Clientes.Remove(cliente);
-        await DbContext.SaveChangesAsync();
-        clientes = await DbContext.Clientes.ToListAsync();
-        StateHasChanged();
+        try
+        {
+            DbContext.Clientes.Remove(client);
+            await DbContext.SaveChangesAsync();
+            await LoadClients();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Erro ao eliminar cliente: " + ex.Message);
+        }
     }
 }

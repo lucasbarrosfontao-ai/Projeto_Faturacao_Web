@@ -12,7 +12,8 @@ namespace ProjetoFaturacao.Models
         [Required]
         public int Id_Fornecedor { get; set; }
 
-        [ForeignKey("Id_Fornecedor")]
+        [ForeignKey("Id_Fornecedor") ] 
+
         public Fornecedor? Fornecedor { get; set; }
 
         [Required]

@@ -1,103 +1,190 @@
-@using Microsoft.AspNetCore.Components;
-@using Microsoft.EntityFrameworkCore;
-@using ProjetoFaturacao.Models;
-@using Microsoft.JSInterop;
-@inject IJSRuntime JSRuntime;
+@page "/Fornecedores/Ver"
+@using Microsoft.AspNetCore.Components
+@using Microsoft.EntityFrameworkCore
+@using ProjetoFaturacao.Models
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
 @inject ApplicationDbContext DbContext
 @inject NavigationManager Navigation
 
-@page "/Fornecedores/Ver"
-
 <PageTitle>Ver Fornecedores</PageTitle>
 
-<h1>Lista de Fornecedores</h1>
+<div class="container-fluid">
+    <!-- HEADER AND SEARCH SECTION -->
+    <div class="row mb-3 align-items-end">
+        <div class="col-md-6">
+            <h3>Consultar Fornecedores</h3>
+        </div>
+        <div class="col-md-6">
+            <div class="input-group justify-content-end">
+                <!-- Search Field Selection -->
+                <select class="form-select" style="max-width: 150px;" @bind="searchField">
+                    <option value="Nome_Empresa">Empresa</option>
+                    <option value="NIPC">NIPC</option>
+                    <option value="Email">Email</option>
+                    <option value="Localidade">Localidade</option>
+                </select>
 
-@if (fornecedores == null)
-{
-    <p><em>Carregando...</em></p>
-}
-else if (fornecedores.Count == 0)
-{
-    <p>Não há fornecedores registados.</p>
-    <button class="btn btn-primary" @onclick="IrParaCriar">Criar Novo Fornecedor</button>
-}
-else
-{
-    <table class="table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Nome da Empresa</th>
-                <th>NIPC</th>
-                <th>Nome do Representante</th>
-                <th>Contato</th>
-                <th>Email</th>
-                <th>Morada</th>
-                <th>Localidade</th>
-                <th>Código Postal</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var fornecedor in fornecedores)
-            {
-                <tr>
-                    <td>@fornecedor.Id_Fornecedor</td>
-                    <td>@fornecedor.Nome_Empresa</td>
-                    <td>@fornecedor.NIPC</td>
-                    <td>@fornecedor.Nome_Representante</td>
-                    <td>@fornecedor.Contato</td>
-                    <td>@fornecedor.Email</td>
-                    <td>@fornecedor.Rua</td>
-                    <td>@fornecedor.Localidade</td>
-                    <td>@fornecedor.Codigo_Postal</td>
-                    <td>
-                        <button class="btn btn-sm btn-primary" @onclick='() => EditarFornecedor(fornecedor.Id_Fornecedor)'>Editar</button>
-                        <button class="btn btn-sm btn-danger" @onclick="() => ConfirmarRemocao(fornecedor)">Eliminar</button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+                <!-- Search Text Input -->
+                <input type="text" class="form-control" style="max-width: 250px;" 
+                       placeholder="Valor a pesquisar..." @bind="searchText" />
 
-    <button class="btn btn-primary" @onclick="IrParaCriar">Criar Novo Fornecedor</button>
-}
+                <!-- Action Buttons -->
+                <button class="btn btn-primary" @onclick="Search">
+                    <i class="bi bi-search"></i> Pesquisar
+                </button>
+                
+                <button class="btn btn-secondary" @onclick="Clear">Limpar</button>
+
+                <button class="btn btn-success" @onclick="CreateNew">Novo Fornecedor</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRID: SUPPLIERS LIST -->
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white">Fornecedores Registados</div>
+        <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
+            <table class="table table-striped table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Empresa</th>
+                        <th>NIPC</th>
+                        <th>Representante</th>
+                        <th>Contato</th>
+                        <th>Email</th>
+                        <th>Localidade</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (supplierList == null)
+                    {
+                        <tr><td colspan="8" class="text-center">Carregando...</td></tr>
+                    }
+                    else if (supplierList.Count == 0)
+                    {
+                        <tr><td colspan="8" class="text-center">Nenhum fornecedor encontrado.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var supplier in supplierList)
+                        {
+                            <tr>
+                                <td>@supplier.Id_Fornecedor</td>
+                                <td class="fw-bold">@supplier.Nome_Empresa</td>
+                                <td>@supplier.NIPC</td>
+                                <td>@supplier.Nome_Representante</td>
+                                <td>@supplier.Contato</td>
+                                <td>@supplier.Email</td>
+                                <td>@supplier.Localidade</td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-primary me-1" 
+                                            @onclick="() => EditSupplier(supplier.Id_Fornecedor)">
+                                        Editar
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" 
+                                            @onclick="() => ConfirmDelete(supplier)">
+                                        Eliminar
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
 @code {
+    // --- STATE VARIABLES ---
+    private List<Fornecedor>? supplierList;
     
-    private List<Fornecedor>? fornecedores;
+    // --- CONTROL VARIABLES ---
+    private string searchField = "Nome_Empresa"; 
+    private string searchText = "";
 
     protected override async Task OnInitializedAsync()
     {
-        fornecedores = await DbContext.Fornecedores.ToListAsync();
+        await LoadSuppliers();
     }
 
-    private void IrParaCriar()
+    private async Task LoadSuppliers()
+    {
+        supplierList = await DbContext.Fornecedores
+                                      .OrderBy(f => f.Nome_Empresa)
+                                      .ToListAsync();
+    }
+
+    private async Task Search()
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            await LoadSuppliers();
+            return;
+        }
+
+        var query = DbContext.Fornecedores.AsQueryable();
+
+        switch (searchField)
+        {
+            case "Nome_Empresa":
+                query = query.Where(f => f.Nome_Empresa.Contains(searchText));
+                break;
+            case "NIPC":
+                query = query.Where(f => f.NIPC.Contains(searchText));
+                break;
+            case "Email":
+                query = query.Where(f => f.Email.Contains(searchText));
+                break;
+            case "Localidade":
+                query = query.Where(f => f.Localidade.Contains(searchText));
+                break;
+        }
+
+        supplierList = await query.ToListAsync();
+    }
+
+    private async Task Clear()
+    {
+        searchText = "";
+        await LoadSuppliers();
+    }
+
+    private void CreateNew()
     {
         Navigation.NavigateTo("/fornecedor/guardar");
     }
 
-    private async Task ConfirmarRemocao(Fornecedor fornecedor)
-    {
-        var confirmado = await JSRuntime.InvokeAsync<bool>("confirm", $"Tem certeza que deseja eliminar o fornecedor '{fornecedor.Nome_Empresa}'?");
-        if (confirmado)
-        {
-            await RemoverFornecedor(fornecedor);
-        }
-    }
-
-    private void EditarFornecedor(int id)
+    private void EditSupplier(int id)
     {
         Navigation.NavigateTo($"/fornecedor/guardar/{id}");
     }
 
-    private async Task RemoverFornecedor(Fornecedor fornecedor)
+    private async Task ConfirmDelete(Fornecedor supplier)
     {
-        if (fornecedor == null) return;
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
+            $"Tem certeza que deseja eliminar o fornecedor '{supplier.Nome_Empresa}'?");
+            
+        if (confirmed)
+        {
+            await DeleteSupplier(supplier);
+        }
+    }
 
-        DbContext.Fornecedores.Remove(fornecedor);
-        await DbContext.SaveChangesAsync();
-        fornecedores = await DbContext.Fornecedores.ToListAsync();
-        StateHasChanged();
+    private async Task DeleteSupplier(Fornecedor supplier)
+    {
+        try
+        {
+            DbContext.Fornecedores.Remove(supplier);
+            await DbContext.SaveChangesAsync();
+            await LoadSuppliers();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Erro ao eliminar: " + ex.Message);
+        }
     }
 }

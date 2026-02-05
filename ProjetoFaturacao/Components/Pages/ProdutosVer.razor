@@ -1,101 +1,198 @@
-@using Microsoft.AspNetCore.Components;
-@using Microsoft.EntityFrameworkCore;
-@using ProjetoFaturacao.Models;
-
+@page "/Produtos/Ver"
+@using Microsoft.AspNetCore.Components
+@using Microsoft.EntityFrameworkCore
+@using ProjetoFaturacao.Models
+@using Microsoft.JSInterop
 @inject ApplicationDbContext DbContext
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 
-@page "/Produtos/Ver"
-
 <PageTitle>Ver Produtos</PageTitle>
 
-<h1>Lista de Produtos</h1>
+<div class="container-fluid">
+    <!-- HEADER AND SEARCH SECTION -->
+    <div class="row mb-3 align-items-end">
+        <div class="col-md-6">
+            <h3>Consultar Produtos</h3>
+        </div>
+        <div class="col-md-6">
+            <div class="input-group justify-content-end">
+                <!-- Search Field Selection -->
+                <select class="form-select" style="max-width: 150px;" @bind="searchField">
+                    <option value="Nome">Nome</option>
+                    <option value="Referencia">Referência</option>
+                    <option value="Fornecedor">Fornecedor</option>
+                    <option value="Unidade">Unidade</option>
+                </select>
 
-@if (produtos == null)
-{
-    <p><em>Carregando...</em></p>
-}
-else if (produtos.Count == 0)
-{
-    <p>Não há produtos registados.</p>
-    <button class="btn btn-primary" @onclick="IrParaCriar">Criar Novo Produto</button>
-}
-else
-{
-    <table class="table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Nome</th>
-                <th>Referência</th>
-                <th>Descrição</th>
-                <th>Preço Custo</th>
-                <th>Preço Venda</th>
-                <th>Unidade Medida</th>
-                <th>IVA</th>
-                <th>Stock Atual</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var produto in produtos)
-            {
-                <tr>
-                    <td>@produto.Id_Produto</td>
-                    <td>@produto.Nome</td>
-                    <td>@produto.Referencia</td>
-                    <td>@produto.Descricao</td>
-                    <td>@produto.Preco_Custo.ToString("C")</td>
-                    <td>@produto.Preco_Venda.ToString("C")</td>
-                    <td>@produto.Unidade_Medida</td>
-                    <td>@produto.IVA%</td>
-                    <td>@produto.Stock_Atual</td>
-                    <td>
-                        <button class="btn btn-sm btn-primary" @onclick='() => EditarProduto(produto.Id_Produto)'>Editar</button>
-                        <button class="btn btn-sm btn-danger" @onclick="() => ConfirmarRemocao(produto)">Eliminar</button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-    <button class="btn btn-primary" @onclick="IrParaCriar">Criar Novo Produto</button>
-}
+                <!-- Search Text Input -->
+                <input type="text" class="form-control" style="max-width: 250px;" 
+                       placeholder="Valor a pesquisar..." @bind="searchText" />
+
+                <!-- Action Buttons -->
+                <button class="btn btn-primary" @onclick="Search">
+                    <i class="bi bi-search"></i> Pesquisar
+                </button>
+                
+                <button class="btn btn-secondary" @onclick="Clear">Limpar</button>
+
+                <button class="btn btn-success" @onclick="CreateNew">Novo Produto</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRID: PRODUCTS LIST -->
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white">Produtos em Stock</div>
+        <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
+            <table class="table table-striped table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Referência</th>
+                        <th>Fornecedor</th>
+                        <th>P. Custo</th>
+                        <th>P. Venda</th>
+                        <th>IVA</th>
+                        <th>Stock</th>
+                        <th>Unidade</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (productList == null)
+                    {
+                        <tr><td colspan="10" class="text-center">Carregando...</td></tr>
+                    }
+                    else if (productList.Count == 0)
+                    {
+                        <tr><td colspan="10" class="text-center">Nenhum produto encontrado.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var product in productList)
+                        {
+                            <tr>
+                                <td>@product.Id_Produto</td>
+                                <td class="fw-bold">@product.Nome</td>
+                                <td>@product.Referencia</td>
+                                <td>@(product.Fornecedor?.Nome_Empresa ?? "N/A")</td>
+                                <td>@product.Preco_Custo.ToString("C")</td>
+                                <td class="text-primary fw-bold">@product.Preco_Venda.ToString("C")</td>
+                                <td>@product.IVA.ToString("0.00")%</td>
+                                <td class="@(product.Stock_Atual <= 0 ? "text-danger fw-bold" : "")">
+                                    @product.Stock_Atual
+                                </td>
+                                <td>@product.Unidade_Medida</td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-primary me-1" 
+                                            @onclick="() => EditProduct(product.Id_Produto)">
+                                        Editar
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" 
+                                            @onclick="() => ConfirmDelete(product)">
+                                        Eliminar
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
 @code {
-    private List<Produto>? produtos;
+    // --- STATE VARIABLES ---
+    private List<Produto>? productList;
+    
+    // --- CONTROL VARIABLES ---
+    private string searchField = "Nome"; 
+    private string searchText = "";
 
     protected override async Task OnInitializedAsync()
     {
-        produtos = await DbContext.Produtos.Include(p => p.Fornecedor).ToListAsync();
+        await LoadProducts();
     }
 
-    private void EditarProduto(int id)
+    private async Task LoadProducts()
     {
-        Navigation.NavigateTo($"/produto/guardar/{id}");
+        // Incluímos o Fornecedor para mostrar o nome na tabela
+        productList = await DbContext.Produtos
+                                   .Include(p => p.Fornecedor)
+                                   .OrderBy(p => p.Nome)
+                                   .ToListAsync();
     }
 
-    private void IrParaCriar()
+    private async Task Search()
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            await LoadProducts();
+            return;
+        }
+
+        var query = DbContext.Produtos.Include(p => p.Fornecedor).AsQueryable();
+
+        switch (searchField)
+        {
+            case "Nome":
+                query = query.Where(p => p.Nome.Contains(searchText));
+                break;
+            case "Referencia":
+                query = query.Where(p => p.Referencia.Contains(searchText));
+                break;
+            case "Fornecedor":
+                query = query.Where(p => p.Fornecedor!.Nome_Empresa.Contains(searchText));
+                break;
+            case "Unidade":
+                query = query.Where(p => p.Unidade_Medida.Contains(searchText));
+                break;
+        }
+
+        productList = await query.ToListAsync();
+    }
+
+    private async Task Clear()
+    {
+        searchText = "";
+        await LoadProducts();
+    }
+
+    private void CreateNew()
     {
         Navigation.NavigateTo("/produto/guardar");
     }
 
-    private async Task ConfirmarRemocao(Produto produto)
+    private void EditProduct(int id)
     {
-        var confirmado = await JSRuntime.InvokeAsync<bool>("confirm", $"Tem certeza que deseja eliminar o produto '{produto.Nome}'?");
-        if (confirmado)
+        Navigation.NavigateTo($"/produto/guardar/{id}");
+    }
+
+    private async Task ConfirmDelete(Produto product)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
+            $"Tem certeza que deseja eliminar o produto '{product.Nome}'?");
+            
+        if (confirmed)
         {
-            await RemoverProduto(produto);
+            await DeleteProduct(product);
         }
     }
 
-    private async Task RemoverProduto(Produto produto)
+    private async Task DeleteProduct(Produto product)
     {
-        if (produto == null) return;
-
-        DbContext.Produtos.Remove(produto);
-        await DbContext.SaveChangesAsync();
-        produtos = await DbContext.Produtos.Include(p => p.Fornecedor).ToListAsync();
-        StateHasChanged();
+        try
+        {
+            DbContext.Produtos.Remove(product);
+            await DbContext.SaveChangesAsync();
+            await LoadProducts();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Erro ao eliminar produto: " + ex.Message);
+        }
     }
 }
