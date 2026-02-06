@@ -1,4 +1,4 @@
-# 📑 Web Invoicing System (Sistema de Faturação Web)
+# 📑 FaturaFlow (Sistema de Faturação Web)
 
 ## 📝 Descrição do Projeto
 Este projeto foi desenvolvido durante a Formação em Contexto de Trabalho (FCT) na empresa **Openvia Mobility**. Trata-se de uma aplicação Web para gestão de faturação, que integra conceitos avançados de comunicação assíncrona, contentorização e boas práticas de arquitetura de software.
