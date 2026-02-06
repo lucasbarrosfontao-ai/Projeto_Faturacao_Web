@@ -8,21 +8,23 @@
 <div class="container-fluid pb-5">
     <!-- CABEÇALHO BOAS-VINDAS -->
     <div class="row mb-4">
-        <div class="col-12">
-            <div class="p-5 bg-primary text-white rounded-3 shadow">
-                <h1>Bem-vindo ao FaturaFlow</h1>
-                <p class="lead">Gestão simplificada de faturas, clientes e produtos com processamento em background.</p>
-                <hr class="my-4">
-                <div class="d-flex gap-2">
-                    <button class="btn btn-light btn-lg fw-bold" @onclick='() => Navigation.NavigateTo("/Faturas/Criar")'>
-                        <i class="bi bi-plus-circle"></i> Nova Fatura
-                    </button>
-                    <div class="badge bg-info p-2 align-self-center">
-                        <i class="bi bi-cpu"></i> Worker Ativo (RabbitMQ)
-                    </div>
+    <div class="col-12">
+        <div class="p-5 bg-primary text-white rounded-3 shadow">
+            <div class="d-flex align-items-center mb-2">
+                <i class="bi bi-lightning-charge-fill me-3" style="font-size: 3rem;"></i>
+                <div>
+                    <h1 class="display-4 fw-bold mb-0">FaturaFlow</h1>
+                    <p class="lead mb-0">Simplicidade no processo, agilidade na entrega.</p>
                 </div>
             </div>
+            <hr class="my-4">
+            <div class="d-flex gap-2">
+                <button class="btn btn-light btn-lg fw-bold" @onclick='() => Navigation.NavigateTo("/Faturas/Criar")'>
+                    <i class="bi bi-plus-circle"></i> Nova Fatura
+                </button>
+            </div>
         </div>
+    </div>
     </div>
 
     <!-- CARDS DE ESTATÍSTICAS -->

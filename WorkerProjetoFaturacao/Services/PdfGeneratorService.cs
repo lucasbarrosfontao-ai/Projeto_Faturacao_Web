@@ -23,7 +23,8 @@ public class PdfGeneratorService
                 {
                     row.RelativeItem().Column(col =>
                     {
-                        col.Item().Text("FaturaFlow - Sistemas de Gestão, Lda.").FontSize(20).SemiBold().FontColor(Colors.Blue.Medium);
+                        col.Item().Text("FaturaFlow").FontSize(20).SemiBold().FontColor(Colors.Blue.Medium);
+                        col.Item().Text("O fluxo inteligente da sua gestão").FontSize(10).Italic();
                         col.Item().Text($"NIF: 123456789");
                     });
 
