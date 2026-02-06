@@ -19,6 +19,7 @@ namespace ProjetoFaturacao.Models
         [Required]
         public string Nome { get; set; } = string.Empty;
 
+        [Required]
         public string Referencia { get; set; } = string.Empty;
 
         public string Descricao { get; set; } = string.Empty;

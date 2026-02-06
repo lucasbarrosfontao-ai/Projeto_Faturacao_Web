@@ -1,7 +1,142 @@
 ﻿@page "/"
+@using Microsoft.EntityFrameworkCore
+@inject ApplicationDbContext DbContext
+@inject NavigationManager Navigation
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Dashboard - FaturaFlow</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="container-fluid pb-5">
+    <!-- CABEÇALHO BOAS-VINDAS -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="p-5 bg-primary text-white rounded-3 shadow">
+                <h1>Bem-vindo ao FaturaFlow</h1>
+                <p class="lead">Gestão simplificada de faturas, clientes e produtos com processamento em background.</p>
+                <hr class="my-4">
+                <div class="d-flex gap-2">
+                    <button class="btn btn-light btn-lg fw-bold" @onclick='() => Navigation.NavigateTo("/Faturas/Criar")'>
+                        <i class="bi bi-plus-circle"></i> Nova Fatura
+                    </button>
+                    <div class="badge bg-info p-2 align-self-center">
+                        <i class="bi bi-cpu"></i> Worker Ativo (RabbitMQ)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-Welcome to your new app.
+    <!-- CARDS DE ESTATÍSTICAS -->
+    <div class="row g-3 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-light h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase">Total Faturas</h6>
+                    <h2 class="fw-bold">@totalFaturas</h2>
+                    <div class="text-primary"><i class="bi bi-file-earmark-text"></i> Registadas</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-light h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase">Clientes</h6>
+                    <h2 class="fw-bold">@totalClientes</h2>
+                    <div class="text-success"><i class="bi bi-people"></i> Ativos</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-light h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase">Faturado Total</h6>
+                    <h2 class="fw-bold text-primary">@totalFaturado.ToString("C")</h2>
+                    <div class="text-muted">Valor Total Acumulado</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-light h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase">Stock Baixo</h6>
+                    <h2 class="fw-bold text-danger">@produtosStockBaixo</h2>
+                    <div class="text-danger"><i class="bi bi-exclamation-triangle"></i> Atenção necessária</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LINKS RÁPIDOS -->
+    <h4 class="mb-3">Ações Rápidas</h4>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="list-group shadow-sm">
+                <a href="/clientes/ver" class="list-group-item list-group-item-action p-3">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1"><i class="bi bi-person-plus text-primary"></i> Gerir Clientes</h5>
+                    </div>
+                    <small class="text-muted">Adicionar ou editar dados de clientes.</small>
+                </a>
+                <a href="/fornecedor/ver" class="list-group-item list-group-item-action p-3">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1"><i class="bi bi-truck text-primary"></i> Fornecedores</h5>
+                    </div>
+                    <small class="text-muted">Listagem e gestão de fornecedores.</small>
+                </a>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="list-group shadow-sm">
+                <a href="/produtos/ver" class="list-group-item list-group-item-action p-3">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1"><i class="bi bi-box-seam text-primary"></i> Inventário</h5>
+                    </div>
+                    <small class="text-muted">Controlo de stock e preços de venda.</small>
+                </a>
+                <a href="/Faturas/Ver" class="list-group-item list-group-item-action p-3">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1"><i class="bi bi-receipt text-primary"></i> Histórico</h5>
+                    </div>
+                    <small class="text-muted">Consultar faturas emitidas e estados.</small>
+                </a>
+            </div>
+        </div>
+        <!-- STATUS DO SISTEMA -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white fw-bold">Arquitetura do Projeto</div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Docker Containers
+                        <span class="badge bg-success rounded-pill">4 Ativos</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        RabbitMQ
+                        <span class="badge bg-primary rounded-pill">Online</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Database
+                        <span class="badge bg-secondary rounded-pill">MySQL 8.0</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int totalFaturas;
+    private int totalClientes;
+    private decimal totalFaturado;
+    private int produtosStockBaixo;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Vai à base de dados buscar estatísticas reais para o júri ver
+        totalFaturas = await DbContext.Faturas.CountAsync();
+        totalClientes = await DbContext.Clientes.CountAsync();
+        totalFaturado = await DbContext.Faturas.SumAsync(f => f.Valor_Total_Pagar);
+        
+        // Exemplo de regra: stock menor que 5 unidades
+        produtosStockBaixo = await DbContext.Produtos.CountAsync(p => p.Stock_Atual < 5);
+    }
+}

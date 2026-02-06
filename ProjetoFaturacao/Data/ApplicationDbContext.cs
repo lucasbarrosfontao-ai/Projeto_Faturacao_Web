@@ -12,15 +12,47 @@ public class ApplicationDbContext : DbContext
     public DbSet<LinhaFatura> LinhasFatura { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        // Aqui mapeamos os nomes exatos das tabelas e chaves para bater com o teu SQL
-        modelBuilder.Entity<LinhaFatura>().ToTable("Linhas_fatura");
-        
-        // Exemplo de como garantir que o EF sabe qual é a PK
-        modelBuilder.Entity<Fatura>().HasKey(f => f.Id_Fatura);
-        modelBuilder.Entity<Cliente>().HasKey(c => c.Id_Cliente);
-        modelBuilder.Entity<Produto>().HasKey(p => p.Id_Produto);
-        modelBuilder.Entity<Fornecedor>().HasKey(f => f.Id_Fornecedor);
-        modelBuilder.Entity<LinhaFatura>().HasKey(l => l.Id_Linha);
-    }
+{
+    // Tabelas
+    modelBuilder.Entity<Cliente>().ToTable("Clientes");
+    modelBuilder.Entity<Fornecedor>().ToTable("Fornecedores");
+    modelBuilder.Entity<Produto>().ToTable("Produtos");
+    modelBuilder.Entity<Fatura>().ToTable("Faturas");
+    modelBuilder.Entity<LinhaFatura>().ToTable("Linhas_fatura");
+
+    // Chaves Primárias
+    modelBuilder.Entity<Cliente>().HasKey(c => c.Id_Cliente);
+    modelBuilder.Entity<Fornecedor>().HasKey(f => f.Id_Fornecedor);
+    modelBuilder.Entity<Produto>().HasKey(p => p.Id_Produto);
+    modelBuilder.Entity<Fatura>().HasKey(f => f.Id_Fatura);
+    modelBuilder.Entity<LinhaFatura>().HasKey(l => l.Id_Linha);
+
+    // Relacionamento: Fatura -> Cliente
+    modelBuilder.Entity<Fatura>()
+        .HasOne(f => f.Cliente)
+        .WithMany()
+        .HasForeignKey(f => f.Id_Cliente)
+        .OnDelete(DeleteBehavior.Cascade);
+
+    // Relacionamento: LinhaFatura -> Fatura (ESTE É O PONTO DO ERRO)
+    modelBuilder.Entity<LinhaFatura>()
+        .HasOne(l => l.Fatura) 
+        .WithMany(f => f.LinhasFatura)
+        .HasForeignKey(l => l.Id_Fatura) // FORÇA usar apenas Id_Fatura
+        .IsRequired();
+
+    // Relacionamento: Produto -> Fornecedor
+    modelBuilder.Entity<Produto>()
+        .HasOne(p => p.Fornecedor)
+        .WithMany()
+        .HasForeignKey(p => p.Id_Fornecedor)
+        .OnDelete(DeleteBehavior.Restrict);
+
+    // Relacionamento: LinhaFatura -> Produto
+    modelBuilder.Entity<LinhaFatura>()
+        .HasOne(l => l.Produto)
+        .WithMany()
+        .HasForeignKey(l => l.Id_Produto)
+        .OnDelete(DeleteBehavior.Restrict);
+}
 }

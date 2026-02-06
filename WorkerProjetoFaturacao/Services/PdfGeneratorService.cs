@@ -23,8 +23,8 @@ public class PdfGeneratorService
                 {
                     row.RelativeItem().Column(col =>
                     {
-                        col.Item().Text("A MINHA EMPRESA PAP").FontSize(20).SemiBold().FontColor(Colors.Blue.Medium);
-                        col.Item().Text($"NIF: 500123456");
+                        col.Item().Text("FaturaFlow - Sistemas de Gestão, Lda.").FontSize(20).SemiBold().FontColor(Colors.Blue.Medium);
+                        col.Item().Text($"NIF: 123456789");
                     });
 
                     row.RelativeItem().AlignRight().Column(col =>
@@ -52,14 +52,16 @@ public class PdfGeneratorService
                             columns.RelativeColumn();  // Quant
                             columns.RelativeColumn();  // Preço
                             columns.RelativeColumn();  // Total
+                            columns.RelativeColumn();  // IVA
                         });
 
                         table.Header(header =>
                         {
                             header.Cell().Element(CellStyle).Text("Produto");
                             header.Cell().Element(CellStyle).Text("Qtd");
-                            header.Cell().Element(CellStyle).Text("Preço");
+                            header.Cell().Element(CellStyle).Text("Preço Liquido");
                             header.Cell().Element(CellStyle).Text("Total");
+                            header.Cell().Element(CellStyle).Text("IVA");
 
                             static IContainer CellStyle(IContainer container) => 
                                 container.DefaultTextStyle(x => x.SemiBold()).PaddingVertical(5).BorderBottom(1).BorderColor(Colors.Black);
@@ -71,6 +73,7 @@ public class PdfGeneratorService
                             table.Cell().Element(CellStyle).Text(linha.Quantidade.ToString());
                             table.Cell().Element(CellStyle).Text($"{linha.Preco_Unitario:C}");
                             table.Cell().Element(CellStyle).Text($"{linha.Subtotal:C}");
+                            table.Cell().Element(CellStyle).Text(linha.Taxa_IVA.ToString());
 
                             static IContainer CellStyle(IContainer container) => container.PaddingVertical(5);
                         }

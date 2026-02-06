@@ -166,14 +166,20 @@
 
     private async Task CarregarFaturasIniciais()
     {
-        // SELECT * FROM Faturas (mas com EF Core)
-        // Usamos .Include("Cliente") para evitar erro no required Cliente
-        listaFaturas = await DbContext.Faturas
+        try
+        {
+            listaFaturas = await DbContext.Faturas
                                       .Include(f => f.Cliente)
                                       .OrderByDescending(f => f.Id_Fatura)
                                       .ToListAsync();
         
         listaLinhas = null; // Limpa o grid de baixo
+        }
+        catch
+        {
+            
+        }
+
     }
 
     // 2. PESQUISAR (Tradução de FaturasVerCMD.PesquisarFaturas)

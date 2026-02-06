@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS Faturas (
     Valor_Total_IVA DECIMAL(10, 2) NOT NULL,
     Valor_Total_Pagar DECIMAL(10, 2) NOT NULL,
     Estado VARCHAR(20) DEFAULT 'Emitida',
-    FOREIGN KEY (Id_Cliente) REFERENCES Clientes(Id_Cliente) ON DELETE RESTRICT
+    FOREIGN KEY (Id_Cliente) REFERENCES Clientes(Id_Cliente) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tabela de Linhas da Fatura (Detalhes)

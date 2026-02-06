@@ -17,7 +17,7 @@ public class EmailService
     {
         var message = new MimeMessage();
         // Configura o Remetente (Podes pôr o teu nome ou da empresa da PAP)
-        message.From.Add(new MailboxAddress("Sistema de Faturação PAP", "faturacao@teuprojeto.com"));
+        message.From.Add(new MailboxAddress("FaturaFlow - Sistema Automático", "no-reply@faturaflow.com"));
         message.To.Add(new MailboxAddress(nomeCliente, emailDestinatario));
         message.Subject = $"Fatura Disponível - Nº {numeroFatura}";
 

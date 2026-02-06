@@ -173,16 +173,25 @@
     }
 
     private async Task DeleteClient(Cliente client)
+{
+    try
     {
-        try
+        // 1. Busca o cliente diretamente do contexto para garantir que ele está sendo rastreado
+        var clientToDelete = await DbContext.Clientes.FindAsync(client.Id_Cliente);
+
+        if (clientToDelete != null)
         {
-            DbContext.Clientes.Remove(client);
+            DbContext.Clientes.Remove(clientToDelete);
             await DbContext.SaveChangesAsync();
+            
+            // Atualiza a lista na tela
             await LoadClients();
         }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", "Erro ao eliminar cliente: " + ex.Message);
-        }
     }
+    catch (Exception ex)
+    {
+        // Se houver erro de chave estrangeira, a mensagem aparecerá aqui
+        await JSRuntime.InvokeVoidAsync("alert", "Erro ao eliminar cliente: " + ex.InnerException?.Message ?? ex.Message);
+    }
+}
 }

@@ -225,7 +225,6 @@
 
     private async Task SaveInvoice()
     {
-        // AJUSTE: Chamada para o método em Português
         if (!ValidationService.VerificacaoFaturas.VerificarCamposFatura(selectedClientId, invoiceNumber, invoiceDate, invoiceItems.Count, out string error))
         {
             await JSRuntime.InvokeVoidAsync("alert", error);
@@ -276,7 +275,6 @@
             await DbContext.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            // --- NOVO: ENVIO PARA O RABBITMQ ---
             try 
             {
                 // Precisamos do email do cliente para enviar o PDF. 
