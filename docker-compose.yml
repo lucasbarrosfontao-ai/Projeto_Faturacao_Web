@@ -4,8 +4,8 @@ services:
     container_name: projeto_faturacao_db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: "admin" # Senha do Root
-      MYSQL_DATABASE: "projeto_faturacao_db"
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
     ports:
       - "3306:3306"
     volumes:

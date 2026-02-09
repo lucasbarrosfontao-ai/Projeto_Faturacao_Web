@@ -1,38 +1,71 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿<div class="top-row ps-3 navbar navbar-dark shadow-sm">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">ProjetoFaturacao</a>
+        <a class="navbar-brand fw-bold d-flex align-items-center" href="">
+            <i class="bi bi-lightning-charge-fill me-2 text-warning"></i>
+            <span>FaturaFlow</span>
+        </a>
     </div>
 </div>
 
 <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="flex-column">
+    <nav class="flex-column mt-2">
+        
+        <!-- SECÇÃO: PRINCIPAL -->
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+            <NavLink class="nav-link rounded-2" href="" Match="NavLinkMatch.All">
+                <i class="bi bi-house-door-fill me-3"></i> Home
             </NavLink>
         </div>
+
+        <div class="text-uppercase text-muted fw-bold small px-4 mt-4 mb-2" style="letter-spacing: 1px; font-size: 0.75rem;">
+            Gestão Operacional
+        </div>
+
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="Fornecedores/Ver">
-                <span class="bi bi-people-fill-nav-menu" aria-hidden="true"></span> Fornecedores
+            <NavLink class="nav-link rounded-2" href="Fornecedores/Ver">
+                <i class="bi bi-truck me-3"></i> Fornecedores
             </NavLink>
         </div>
+
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="Clientes/Ver">
-                <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> Clientes
+            <NavLink class="nav-link rounded-2" href="Clientes/Ver">
+                <i class="bi bi-person-badge-fill me-3"></i> Clientes
             </NavLink>
         </div>
+
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="Produtos/Ver">
-                <span class="bi bi-box-seam-fill-nav-menu" aria-hidden="true"></span> Produtos
+            <NavLink class="nav-link rounded-2" href="Produtos/Ver">
+                <i class="bi bi-box-seam-fill me-3"></i> Produtos
             </NavLink>
         </div>
+
+        <div class="text-uppercase text-muted fw-bold small px-4 mt-4 mb-2" style="letter-spacing: 1px; font-size: 0.75rem;">
+            Documentação
+        </div>
+
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="Faturas/Ver">
-                <span class="bi bi-receipt-cutoff-nav-menu" aria-hidden="true"></span> Faturas
+            <NavLink class="nav-link rounded-2" href="Faturas/Ver">
+                <i class="bi bi-receipt-cutoff me-3"></i> Listar Faturas
             </NavLink>
         </div>
+        
+        <div class="nav-item px-3">
+            <NavLink class="nav-link rounded-2" href="Faturas/Criar">
+                <i class="bi bi-plus-circle-fill me-3 text-info"></i> Nova Fatura
+            </NavLink>
+        </div>
+
+        <div class="text-uppercase text-muted fw-bold small px-4 mt-4 mb-2" style="letter-spacing: 1px; font-size: 0.75rem;">
+            Relatórios & BI
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link rounded-2" href="Vendas/VisaoGeral">
+                <i class="bi bi-graph-up-arrow me-3"></i> Visão de Vendas
+            </NavLink>
+        </div>
+
     </nav>
 </div>
-

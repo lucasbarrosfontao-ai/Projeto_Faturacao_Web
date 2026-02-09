@@ -2,6 +2,7 @@
 
 @using Microsoft.EntityFrameworkCore
 @using ProjetoFaturacao.Models 
+@using System.Globalization
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
 @inject ValidationService ValidationService
 @inject ApplicationDbContext DbContext
@@ -111,9 +112,9 @@
                                 <td>@item.ProductId</td>
                                 <td>@item.ProductName</td>
                                 <td>@item.Quantity</td>
-                                <td>@item.UnitPrice.ToString("C")</td>
+                                <td>@item.UnitPrice.ToString("C", new CultureInfo("pt-PT"))</td>
                                 <td>@item.VatRate.ToString("0.##")%</td>
-                                <td>@item.RowSubtotal.ToString("C")</td>
+                                <td>@item.RowSubtotal.ToString("C", new CultureInfo("pt-PT"))</td>
                                 <td class="text-center">
                                     <button class="btn btn-danger btn-sm" @onclick="() => RemoveItem(item)">
                                         X
@@ -132,9 +133,9 @@
         <div class="card-body bg-light">
             <div class="row">
                 <div class="col-md-6">
-                    <p class="mb-1">Valor dos Produtos: <strong>@TotalNet.ToString("C")</strong></p>
-                    <p class="mb-1">Valor do IVA: <strong>@TotalVat.ToString("C")</strong></p>
-                    <h4 class="text-primary mt-2">Total a pagar: <strong>@TotalPayable.ToString("C")</strong></h4>
+                    <p class="mb-1">Valor dos Produtos: <strong>@TotalNet.ToString("C", new CultureInfo("pt-PT"))</strong></p>
+                    <p class="mb-1">Valor do IVA: <strong>@TotalVat.ToString("C", new CultureInfo("pt-PT"))</strong></p>
+                    <h4 class="text-primary mt-2">Total a pagar: <strong>@TotalPayable.ToString("C", new CultureInfo("pt-PT"))</strong></h4>
                 </div>
                 <div class="col-md-6 text-end align-self-end">
                     <button class="btn btn-lg btn-light border me-2" @onclick="Exit">Sair</button>
@@ -301,12 +302,6 @@
             }
             // ------------------------------------
 
-            invoiceItems.Clear();
-            invoiceNumber = "";
-            selectedClientId = 0;
-
-            await JSRuntime.InvokeVoidAsync("alert", "Fatura inserida com sucesso!");
-            
             invoiceItems.Clear();
             invoiceNumber = "";
             selectedClientId = 0;

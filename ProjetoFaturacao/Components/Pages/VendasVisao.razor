@@ -1,0 +1,163 @@
+@page "/Vendas/VisaoGeral"
+@using Microsoft.EntityFrameworkCore
+@using ApexCharts
+@inject ApplicationDbContext DbContext
+
+<PageTitle>Visão Geral de Vendas - FaturaFlow</PageTitle>
+
+<div class="container-fluid pb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-graph-up-arrow text-primary"></i> Visão Geral de Vendas</h1>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="AtualizarManual">
+            <i class="bi bi-arrow-clockwise"></i> Atualizar Dados
+        </button>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center p-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">A processar estatísticas da base de dados...</p>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            <!-- 1. GRÁFICO: ÚLTIMAS 24 HORAS -->
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Vendas (Últimas 24h)</h5>
+                        @* O @key forca o grafico a redesenhar quando o count muda *@
+                        <ApexChart @key="vendas24h.Count" TItem="DadosGrafico" Options="optionsHoras">
+                            <ApexPointSeries TItem="DadosGrafico" Items="vendas24h" Name="Euros"
+                                            SeriesType="SeriesType.Bar"
+                                            XValue="@(e => e.Etiqueta)" YValue="@(e => e.Valor)" />
+                        </ApexChart>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. GRÁFICO: ÚLTIMOS 7 DIAS -->
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Volume Semanal</h5>
+                        <ApexChart @key="vendasSemana.Count" TItem="DadosGrafico" Options="optionsDias">
+                            <ApexPointSeries TItem="DadosGrafico" Items="vendasSemana" Name="Euros"
+                                            SeriesType="SeriesType.Area"
+                                            XValue="@(e => e.Etiqueta)" YValue="@(e => e.Valor)" />
+                        </ApexChart>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. GRÁFICO: ÚLTIMOS 12 MESES -->
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Faturação Mensal (Último Ano)</h5>
+                        <ApexChart @key="vendasAno.Count" TItem="DadosGrafico" Options="optionsMeses">
+                            <ApexPointSeries TItem="DadosGrafico" Items="vendasAno" Name="Faturado"
+                                            SeriesType="SeriesType.Line"
+                                            XValue="@(e => e.Etiqueta)" YValue="@(e => e.Valor)" />
+                        </ApexChart>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<DadosGrafico> vendas24h = new();
+    private List<DadosGrafico> vendasSemana = new();
+    private List<DadosGrafico> vendasAno = new();
+    private bool isLoading = true;
+
+    private ApexChartOptions<DadosGrafico> optionsHoras = new();
+    private ApexChartOptions<DadosGrafico> optionsDias = new();
+    private ApexChartOptions<DadosGrafico> optionsMeses = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await AtualizarManual();
+        }
+    }
+
+    private async Task AtualizarManual()
+    {
+        isLoading = true;
+        StateHasChanged();
+        
+        await CarregarDados();
+        ConfigurarOpcoes();
+        
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task CarregarDados()
+    {
+        var agora = DateTime.Now;
+        
+        // Buscamos tudo o que interessa primeiro para evitar muitas idas ao SQL
+        var limiteAno = agora.AddYears(-1);
+        var faturas = await DbContext.Faturas
+            .Where(f => f.Data_Emissao >= limiteAno)
+            .ToListAsync();
+
+        // 1. ÚLTIMAS 24 HORAS
+        var limite24h = agora.AddHours(-24);
+        vendas24h = faturas
+            .Where(f => f.Data_Emissao >= limite24h)
+            .GroupBy(f => f.Data_Emissao.Hour)
+            .Select(g => new DadosGrafico { Etiqueta = $"{g.Key}h", Valor = g.Sum(f => f.Valor_Total_Pagar) })
+            .OrderBy(x => x.Etiqueta)
+            .ToList();
+
+        // 2. ÚLTIMOS 7 DIAS
+        var limiteSemana = DateTime.Today.AddDays(-7);
+        vendasSemana = faturas
+            .Where(f => f.Data_Emissao >= limiteSemana)
+            .GroupBy(f => f.Data_Emissao.Date)
+            .Select(g => new DadosGrafico { DataOriginal = g.Key, Valor = g.Sum(f => f.Valor_Total_Pagar) })
+            .OrderBy(x => x.DataOriginal)
+            .Select(x => new DadosGrafico { Etiqueta = x.DataOriginal.ToString("dd/MM"), Valor = x.Valor })
+            .ToList();
+
+        // 3. ÚLTIMOS 12 MESES (AQUI ESTAVA O ERRO, FALTAVA ESTA LÓGICA)
+        vendasAno = faturas
+            .GroupBy(f => new { f.Data_Emissao.Year, f.Data_Emissao.Month })
+            .Select(g => new DadosGrafico { 
+                DataOriginal = new DateTime(g.Key.Year, g.Key.Month, 1),
+                Valor = g.Sum(f => f.Valor_Total_Pagar),
+                Etiqueta = $"{g.Key.Month}/{g.Key.Year}"
+            })
+            .OrderBy(x => x.DataOriginal)
+            .ToList();
+
+        Console.WriteLine($"DEBUG: Site carregou {faturas.Count} faturas para os gráficos.");
+    }
+
+    private void ConfigurarOpcoes()
+    {
+        optionsHoras = CriarBasico("€");
+        optionsDias = CriarBasico("€");
+        optionsMeses = CriarBasico("€");
+    }
+
+    private ApexChartOptions<DadosGrafico> CriarBasico(string sufixo) => new ApexChartOptions<DadosGrafico> {
+        Chart = new Chart { Toolbar = new Toolbar { Show = false }, Animations = new Animations { Enabled = true } },
+        Yaxis = new List<YAxis> { new YAxis { Labels = new YAxisLabels { Formatter = $"function(v) {{ return v + '{sufixo}'; }}" } } }
+    };
+
+    public class DadosGrafico
+    {
+        public string Etiqueta { get; set; } = "";
+        public decimal Valor { get; set; }
+        public DateTime DataOriginal { get; set; }
+    }
+}

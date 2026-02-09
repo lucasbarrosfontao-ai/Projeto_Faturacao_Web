@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Components
 @using Microsoft.EntityFrameworkCore
 @using ProjetoFaturacao.Models
+@using System.Globalization
 @inject NavigationManager Navigation
 @inject ApplicationDbContext DbContext
 
@@ -81,9 +82,9 @@
                                     @(fatura.Cliente != null ? fatura.Cliente.Nome : fatura.Id_Cliente)
                                 </td>
                                 <td>@fatura.Data_Emissao.ToShortDateString()</td>
-                                <td>@fatura.Valor_Total_Liquido.ToString("C")</td>
-                                <td>@fatura.Valor_Total_IVA.ToString("C")</td>
-                                <td>@fatura.Valor_Total_Pagar.ToString("C")</td>
+                                <td>@fatura.Valor_Total_Liquido.ToString("C", new CultureInfo("pt-PT"))</td>
+                                <td>@fatura.Valor_Total_IVA.ToString("C", new CultureInfo("pt-PT"))</td>
+                                <td>@fatura.Valor_Total_Pagar.ToString("C", new CultureInfo("pt-PT"))</td>
                                 <td>@fatura.Estado</td>
                                 <td>
                                     <!-- Botão "Ver Linhas" (Substitui DGVFaturas_CellContentClick) -->
@@ -135,9 +136,9 @@
                                         @(linha.Produto != null ? linha.Produto.Nome : linha.Id_Produto)
                                     </td>
                                     <td>@linha.Quantidade</td>
-                                    <td>@linha.Preco_Unitario.ToString("C")</td>
+                                    <td>@linha.Preco_Unitario.ToString("C", new CultureInfo("pt-PT"))</td>
                                     <td>@linha.Taxa_IVA.ToString("0.##")%</td>
-                                    <td>@linha.Subtotal.ToString("C")</td>
+                                    <td>@linha.Subtotal.ToString("C", new CultureInfo("pt-PT"))</td>
                                 </tr>
                             }
                         }

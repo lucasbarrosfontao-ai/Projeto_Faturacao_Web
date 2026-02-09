@@ -3,6 +3,7 @@
 @using Microsoft.EntityFrameworkCore
 @using ProjetoFaturacao.Models
 @using Microsoft.JSInterop
+@using System.Globalization
 @inject ApplicationDbContext DbContext
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
@@ -78,8 +79,8 @@
                                 <td class="fw-bold">@product.Nome</td>
                                 <td>@product.Referencia</td>
                                 <td>@(product.Fornecedor?.Nome_Empresa ?? "N/A")</td>
-                                <td>@product.Preco_Custo.ToString("C")</td>
-                                <td class="text-primary fw-bold">@product.Preco_Venda.ToString("C")</td>
+                                <td>@product.Preco_Custo.ToString("C", new CultureInfo("pt-PT"))</td>
+                                <td class="text-primary fw-bold">@product.Preco_Venda.ToString("C", new CultureInfo("pt-PT"))</td>
                                 <td>@product.IVA.ToString("0.00")%</td>
                                 <td class="@(product.Stock_Atual <= 0 ? "text-danger fw-bold" : "")">
                                     @product.Stock_Atual

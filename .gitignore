@@ -397,6 +397,8 @@ FodyWeavers.xsd
 # Local History for Visual Studio Code
 .history/
 
+.env
+
 # Windows Installer files from build outputs
 *.cab
 *.msi
@@ -472,5 +474,3 @@ FodyWeavers.xsd
 
 # Coverlet is a free, cross platform Code Coverage Tool
 coverage*[.json, .xml, .info]
-
-.env

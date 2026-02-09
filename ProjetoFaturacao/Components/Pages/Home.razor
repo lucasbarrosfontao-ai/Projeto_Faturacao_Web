@@ -18,9 +18,12 @@
                 </div>
             </div>
             <hr class="my-4">
-            <div class="d-flex gap-2">
-                <button class="btn btn-light btn-lg fw-bold" @onclick='() => Navigation.NavigateTo("/Faturas/Criar")'>
-                    <i class="bi bi-plus-circle"></i> Nova Fatura
+            <div class="d-flex flex-column flex-md-row gap-3">
+                <button class="btn btn-light btn-lg fw-bold shadow-sm" @onclick='() => Navigation.NavigateTo("/Faturas/Criar")'>
+                    <i class="bi bi-plus-circle me-2"></i>Nova Fatura
+                </button>
+                <button class="btn btn-light btn-lg fw-bold shadow-sm" @onclick='() => Navigation.NavigateTo("/Vendas/VisaoGeral")'>
+                    <i class="bi bi-graph-up-arrow me-2"></i>Visão Geral Vendas
                 </button>
             </div>
         </div>
@@ -51,7 +54,7 @@
             <div class="card border-0 shadow-sm bg-light h-100">
                 <div class="card-body">
                     <h6 class="text-muted text-uppercase">Faturado Total</h6>
-                    <h2 class="fw-bold text-primary">@totalFaturado.ToString("C")</h2>
+                    <h2 class="fw-bold text-primary">@totalFaturado.ToString("€")</h2>
                     <div class="text-muted">Valor Total Acumulado</div>
                 </div>
             </div>
