@@ -98,7 +98,8 @@ public class ValidationService
             resultado.Erros.Add("Preço de venda não pode ser negativo.");
         if (string.IsNullOrWhiteSpace(unidadeMedida))
             resultado.Erros.Add("Unidade de medida é obrigatória.");
-        
+        if (iva < 0 || iva >100)
+            resultado.Erros.Add("O Iva não pode ser menor que 0 nem maior que 100");
         if (stock < 0)
             resultado.Confirmacoes.Add("O stock é negativo. Deseja confirmar?");
         if (precoCusto > precoVenda && precoVenda > 0)

@@ -8,13 +8,17 @@
 @inject IJSRuntime JSRuntime
 @inject ValidationService ValidationService
 
-<PageTitle>Guardar Produto</PageTitle>
+<PageTitle>@(Id.HasValue ? "Editar Produto" : "Novo Produto")</PageTitle>
 
 @if (isLoading)
 {
-    <p><em>Carregando...</em></p>
+    <div class="d-flex justify-content-center">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Carregando...</span>
+        </div>
+    </div>
 }
-else if (fornecedores == null || fornecedores.Count == 0)
+else if (fornecedores == null || !fornecedores.Any())
 {
     <div class="alert alert-warning">
         <p>Nenhum fornecedor encontrado. Crie um fornecedor para poder criar um produto.</p>
@@ -23,15 +27,17 @@ else if (fornecedores == null || fornecedores.Count == 0)
 }
 else
 {
-    <h3>Guardar Produto</h3>
+    <h3>@(Id.HasValue ? "Editar Produto" : "Criar Novo Produto")</h3>
 
-    <EditForm Model="produto" OnValidSubmit="HandleValidSubmit">
+    @* Usamos OnSubmit para que o nosso serviço valide TUDO e mostre no topo *@
+    <EditForm Model="produto" OnSubmit="HandleSubmit">
         <DataAnnotationsValidator />
 
         @if (validationErrors.Any())
         {
-            <div class="alert alert-danger">
-                <ul>
+            <div class="alert alert-danger shadow-sm">
+                <h5 class="alert-heading">Corrija os seguintes erros:</h5>
+                <ul class="mb-0">
                     @foreach (var error in validationErrors)
                     {
                         <li>@error</li>
@@ -40,69 +46,73 @@ else
             </div>
         }
 
-        <div class="mb-3">
-            <label for="fornecedor" class="form-label">Fornecedor</label>
-            <InputSelect id="fornecedor" class="form-control" @bind-Value="produto.Id_Fornecedor">
-                <option value="0">Selecione um fornecedor</option>
-                @foreach (var f in fornecedores)
-                {
-                    <option value="@f.Id_Fornecedor">@f.Nome_Empresa</option>
-                }
-            </InputSelect>
-            <ValidationMessage For="@(() => produto.Id_Fornecedor)" />
-        </div>
-
-        <div class="mb-3">
-            <label for="nome" class="form-label">Nome</label>
-            <InputText id="nome" class="form-control" @bind-Value="produto.Nome" />
-            <ValidationMessage For="@(() => produto.Nome)" />
-        </div>
-
-        <div class="mb-3">
-            <label for="referencia" class="form-label">Referência</label>
-            <InputText id="referencia" class="form-control" @bind-Value="produto.Referencia" />
-        </div>
-
-        <div class="mb-3">
-            <label for="descricao" class="form-label">Descrição</label>
-            <InputTextArea id="descricao" class="form-control" @bind-Value="produto.Descricao" />
-        </div>
-
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="precoCusto" class="form-label">Preço Custo</label>
-                <InputNumber id="precoCusto" class="form-control" @bind-Value="produto.Preco_Custo" step="0.01" />
+        <div class="card shadow-sm p-4">
+            <div class="mb-3">
+                <label class="form-label fw-bold">Fornecedor</label>
+                <InputSelect class="form-control" @bind-Value="produto.Id_Fornecedor">
+                    <option value="0">-- Selecione um fornecedor --</option>
+                    @foreach (var f in fornecedores)
+                    {
+                        <option value="@f.Id_Fornecedor">@f.Nome_Empresa</option>
+                    }
+                </InputSelect>
             </div>
-            <div class="col-md-6 mb-3">
-                <label for="precoVenda" class="form-label">Preço Venda</label>
-                <InputNumber id="precoVenda" class="form-control" @bind-Value="produto.Preco_Venda" step="0.01" />
+
+            <div class="row">
+                <div class="col-md-8 mb-3">
+                    <label class="form-label fw-bold">Nome do Produto</label>
+                    <InputText class="form-control" @bind-Value="produto.Nome" placeholder="Ex: Cimento Cola" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">Referência</label>
+                    <InputText class="form-control" @bind-Value="produto.Referencia" placeholder="Ref-001" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Descrição</label>
+                <InputTextArea class="form-control" @bind-Value="produto.Descricao" rows="2" />
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">Preço Custo (€)</label>
+                    <InputNumber class="form-control" @bind-Value="produto.Preco_Custo" step="0.01" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">Preço Venda (€)</label>
+                    <InputNumber class="form-control" @bind-Value="produto.Preco_Venda" step="0.01" />
+                </div>
+                <div class="col-md4 mb-3">
+        <label for="unidadeMedida" class="form-label">Unidade de Medida</label>
+        <InputSelect id="unidadeMedida" class="form-control" @bind-Value="produto.Unidade_Medida">
+            <option value="">-- Selecione --</option>
+            <optgroup label="Comprimento"><option value="mm">mm</option><option value="cm">cm</option><option value="m">m</option></optgroup>
+            <optgroup label="Volume"><option value="ml">ml</option><option value="l">l</option></optgroup>
+            <optgroup label="Massa"><option value="g">g</option><option value="kg">kg</option></optgroup>
+            <optgroup label="Outros"><option value="un">Unidade</option><option value="cx">Caixa</option></optgroup>
+        </InputSelect>
+    </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">IVA (%)</label>
+                    <InputNumber class="form-control" @bind-Value="produto.IVA" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Stock Inicial</label>
+                    <InputNumber class="form-control" @bind-Value="produto.Stock_Atual" />
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-success me-2">
+                    <i class="bi bi-save"></i> Guardar Produto
+                </button>
+                <button type="button" class="btn btn-outline-secondary" @onclick="Cancelar">Cancelar</button>
             </div>
         </div>
-
-        <div class="mb-3">
-            <label for="unidadeMedida" class="form-label">Unidade de Medida</label>
-            <InputSelect id="unidadeMedida" class="form-control" @bind-Value="produto.Unidade_Medida">
-                <option value="">-- Selecione --</option>
-                <optgroup label="Comprimento"><option value="mm">mm</option><option value="cm">cm</option><option value="m">m</option></optgroup>
-                <optgroup label="Volume"><option value="ml">ml</option><option value="l">l</option></optgroup>
-                <optgroup label="Massa"><option value="g">g</option><option value="kg">kg</option></optgroup>
-                <optgroup label="Outros"><option value="un">Unidade</option><option value="cx">Caixa</option></optgroup>
-            </InputSelect>
-        </div>
-
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="iva" class="form-label">IVA (%)</label>
-                <InputNumber id="iva" class="form-control" @bind-Value="produto.IVA" step="0.01" />
-            </div>
-            <div class="col-md-6 mb-3">
-                <label for="stockAtual" class="form-label">Stock Atual</label>
-                <InputNumber id="stockAtual" class="form-control" @bind-Value="produto.Stock_Atual" />
-            </div>
-        </div>
-
-        <button type="submit" class="btn btn-primary">Guardar</button>
-        <button type="button" class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
     </EditForm>
 }
 
@@ -116,56 +126,71 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        fornecedores = await DbContext.Fornecedores.ToListAsync();
-
-        if (Id.HasValue)
+        try
         {
-            produto = await DbContext.Produtos.FindAsync(Id.Value) ?? new Produto();
-        }
-        else
-        {
-            produto = new Produto { IVA = 23 }; // Valor padrão opcional
-        }
+            fornecedores = await DbContext.Fornecedores.ToListAsync();
 
-        isLoading = false;
+            if (Id.HasValue)
+            {
+                var p = await DbContext.Produtos.FindAsync(Id.Value);
+                if (p != null) produto = p;
+            }
+            else
+            {
+                produto = new Produto { IVA = 23, Unidade_Medida = "un" };
+            }
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
 
-    private async Task HandleValidSubmit()
+    private async Task HandleSubmit()
     {
         validationErrors.Clear();
 
-        // CHAMADA AO SERVIÇO (Sincronizada com o passo anterior)
+        // 1. Chamar o serviço de validação centralizado
         var result = ValidationService.ValidarProduto(
-            produto.Nome, produto.Referencia, produto.Id_Fornecedor, 
-            produto.Preco_Custo, produto.Preco_Venda, produto.Unidade_Medida, 
-            produto.IVA, produto.Stock_Atual);
+            produto.Nome, 
+            produto.Referencia, 
+            produto.Id_Fornecedor, 
+            produto.Preco_Custo, 
+            produto.Preco_Venda, 
+            produto.Unidade_Medida, 
+            produto.IVA, 
+            produto.Stock_Atual);
 
+        // 2. Se houver erros, exibe na lista do topo e para
         if (result.Erros.Any())
         {
             validationErrors = result.Erros;
+            // Scroll para o topo para o utilizador ver os erros
+            await JSRuntime.InvokeVoidAsync("window.scrollTo", 0, 0);
             return;
         }
 
-        // Tratar confirmações (ex: Preço Custo > Venda)
+        // 3. Tratar confirmações (Avisos que permitem continuar)
         foreach (var msg in result.Confirmacoes)
         {
             bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", msg);
             if (!confirmed) return;
         }
 
+        // 4. Gravação na Base de Dados
         try
         {
             if (produto.Id_Produto == 0)
                 DbContext.Produtos.Add(produto);
             else
-                DbContext.Produtos.Update(produto);
+                DbContext.Entry(produto).State = EntityState.Modified;
 
             await DbContext.SaveChangesAsync();
             Navigation.NavigateTo("/Produtos/Ver");
         }
         catch (Exception ex)
         {
-            validationErrors.Add($"Erro ao gravar: {ex.Message}");
+            validationErrors.Add($"Erro técnico ao gravar: {ex.Message}");
         }
     }
 

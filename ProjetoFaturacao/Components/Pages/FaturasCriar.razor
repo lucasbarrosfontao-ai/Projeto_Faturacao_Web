@@ -209,7 +209,7 @@
             ProductName = currentProduct.Nome,
             Quantity = quantity,
             UnitPrice = unitPrice,
-            VatRate = currentProduct.IVA 
+            VatRate = currentProduct.IVA
         });
         
         quantity = 0;
@@ -327,6 +327,6 @@
         public decimal VatRate { get; set; }
 
         public decimal RowSubtotal => Quantity * UnitPrice;
-        public decimal VatAmount => RowSubtotal * (VatRate / 100);
+        public decimal VatAmount => RowSubtotal * (Convert.ToDecimal(VatRate) / 100);
     }
 }

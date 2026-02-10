@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using Microsoft.EntityFrameworkCore
+@using System.Globalization
 @inject ApplicationDbContext DbContext
 @inject NavigationManager Navigation
 
@@ -54,7 +55,7 @@
             <div class="card border-0 shadow-sm bg-light h-100">
                 <div class="card-body">
                     <h6 class="text-muted text-uppercase">Faturado Total</h6>
-                    <h2 class="fw-bold text-primary">@totalFaturado.ToString("€")</h2>
+                    <h2 class="fw-bold text-primary">@totalFaturado.ToString("C", new CultureInfo("pt-PT"))</h2>
                     <div class="text-muted">Valor Total Acumulado</div>
                 </div>
             </div>

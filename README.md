@@ -1,42 +1,192 @@
-# 📑 FaturaFlow (Sistema de Faturação Web)
+📑 FaturaFlow — Sistema de Faturação Web
+🧭 Visão Geral
 
-## 📝 Descrição do Projeto
-Este projeto foi desenvolvido durante a Formação em Contexto de Trabalho (FCT) na empresa **Openvia Mobility**. Trata-se de uma aplicação Web para gestão de faturação, que integra conceitos avançados de comunicação assíncrona, contentorização e boas práticas de arquitetura de software.
+O FaturaFlow é uma aplicação Web de faturação e gestão de inventário desenvolvida em .NET com foco em arquitetura moderna, escalabilidade e automação de processos.
+O sistema foi concebido para simular o contexto real de uma Pequena ou Média Empresa (PME), onde a performance e a fiabilidade são fatores críticos.
 
-O foco principal foi criar um sistema robusto capaz de gerir faturas, calcular impostos e notificar clientes de forma automática e desacoplada.
+Este projeto foi desenvolvido no âmbito da Formação em Contexto de Trabalho (FCT) e da Prova de Aptidão Profissional (PAP) do curso de Técnico de Informática de Gestão, na empresa Openvia Mobility.
 
-## 🚀 Tecnologias Utilizadas
-*   **Linguagem:** C# (.NET 8/9)
-*   **Framework Web:** Blazor (Razor Components)
-*   **Base de Dados:** MySQL
-*   **Mensageria (Message Broker):** RabbitMQ (para processamento de filas de e-mail)
-*   **Ambiente Virtualizado:** Docker & Docker-compose
-*   **Testes de Email:** Mailtrap (Servidor SMTP de teste)
-*   **Controlo de Versões:** Git & GitHub
+🎯 Objetivo do Projeto
 
-## 🏗️ Arquitetura
-O projeto segue os princípios de **Clean Architecture**, promovendo a separação de responsabilidades em camadas:
-- **Domain:** Entidades e regras de negócio.
-- **Application:** Casos de uso e interfaces.
-- **Infrastructure:** Persistência de dados e integrações externas (RabbitMQ).
-- **Presentation (Blazor):** Interface de utilizador.
+Criar um sistema de faturação que:
 
-## ✨ Funcionalidades Principais
-- [x] **Gestão de Faturas:** Criação, listagem e detalhe de faturas.
-- [x] **Cálculo Automático:** Processamento de IVA, totais líquidos e brutos em tempo real.
-- [x] **Notificações Assíncronas:** Ao emitir uma fatura, uma mensagem é enviada para o **RabbitMQ**.
-- [x] **Worker Service:** Um serviço em segundo plano consome a fila e envia o e-mail de confirmação via **Mailtrap**.
-- [x] **Validações de Dados:** Garante a integridade da informação antes da persistência na base de dados.
+     automatize o ciclo completo de venda;
+     evite bloqueios da interface durante tarefas pesadas;
+     utilize comunicação assíncrona para geração de documentos e envio de emails;
+     seja facilmente replicável em qualquer ambiente através de Docker.
 
-## 📦 Como Executar o Projeto
-Para rodar o projeto localmente, é necessário ter o **Docker** instalado.
+🚀 Tecnologias Utilizadas
+Categoria	               Tecnologias
+Linguagem	C#             (.NET 8)
+Framework Web	          Blazor Server (Razor Components)
+Base de Dados	          MySQL
+ORM	                    Entity Framework Core
+Mensageria	          RabbitMQ
+Automação	               Worker Service (.NET)
+PDFs	                    QuestPDF
+Email	               MailKit + Mailtrap (ambiente de testes)
+Infraestrutura	          Docker & Docker Compose
+Controlo de Versões	     Git & GitHub
 
-1. Clone o repositório:
-     git clone https://github.com/teu-usuario/nome-do-repositorio.git
-2. Navegue até a pasta do projeto:
-     cd nome-do-repositorio
-3. Inicie os serviços via Docker Compose:
-      docker-compose up -d
-Este comando irá subir a aplicação, a base de dados MySQL e o servidor RabbitMQ automaticamente.
-4. Aceda à aplicação no seu browser: 
-     http://localhost:5000 (ou a porta configurada).
+🏗️ Arquitetura da Solução
+
+O FaturaFlow segue princípios de Clean Architecture e desacoplamento, separando claramente responsabilidades técnicas e de negócio.
+
+Componentes Principais
+     Web Application (Blazor)
+          Interface de utilizador responsável pela gestão de clientes, produtos, fornecedores e faturação.
+
+     RabbitMQ (Message Broker)
+          Responsável por receber mensagens de faturação e distribuí-las de forma assíncrona.
+
+     Worker Service
+          Serviço independente que consome mensagens da fila para:
+               gerar o PDF da fatura;
+               enviar o email ao cliente;
+               reportar erros sem comprometer a faturação.
+
+     MySQL
+          Base de dados relacional que garante persistência e integridade dos dados.
+
+📌 O utilizador nunca fica bloqueado enquanto tarefas pesadas são executadas.
+
+🔄 Fluxo de Funcionamento (Resumo)
+
+     1- O utilizador cria uma fatura na aplicação Web.
+     2- A fatura é validada e gravada na base de dados.
+     3- O sistema envia uma mensagem para o RabbitMQ.
+     4- O Worker Service consome a mensagem.
+     5- O Worker gera o PDF da fatura.
+     6- O Worker tenta enviar o email ao cliente:
+          se falhar, o erro é registado e comunicado;
+          se o cliente não tiver email, o envio é ignorado.
+     7- A faturação permanece válida em qualquer cenário.
+
+✨ Funcionalidades Principais
+
+     ✔️ Gestão de Clientes, Fornecedores e Produtos
+     ✔️ Emissão de Faturas com cálculo automático de IVA
+     ✔️ Atualização automática de stock
+     ✔️ Geração dinâmica de faturas em PDF
+     ✔️ Envio automático de emails (assíncrono)
+     ✔️ Tratamento de erros sem perda de dados
+     ✔️ Dashboard de vendas (Business Intelligence)
+     ✔️ Ambiente totalmente contentorizado (Docker)
+
+⚠️ Limitações Atuais
+     Este projeto foi desenvolvido em contexto académico e possui algumas limitações assumidas:
+          Ausência de autenticação e perfis de utilizador (login);
+          Não integração com APIs oficiais da Autoridade Tributária;
+          Ausência de testes automatizados (unitários/integrados).
+     Estas limitações são reconhecidas e documentadas como pontos de evolução futura.
+
+🧠 Aprendizagens-Chave
+
+Este projeto permitiu consolidar competências em:
+     arquiteturas distribuídas;
+     comunicação assíncrona;
+     contentorização de aplicações;
+     lógica de negócio aplicada à gestão;
+     tratamento de erros e resiliência de sistemas.
+
+📚 Contexto Académico
+
+Projeto desenvolvido no âmbito da:
+     Formação em Contexto de Trabalho (FCT)
+     Prova de Aptidão Profissional (PAP)
+     Curso: Técnico de Informática de Gestão
+
+📦 Como Executar o Projeto
+
+     O FaturaFlow utiliza Docker Compose para garantir que todos os serviços (Web, Worker, Base de Dados e RabbitMQ) funcionem de forma integrada e consistente em qualquer ambiente.
+
+🔧 Pré-requisitos
+
+Antes de começar, certifica-te de que tens instalado:
+
+     Docker
+     Docker Compose
+     Git
+
+▶️ Passo 1 — Clonar o Repositório
+     git clone https://github.com/lucasbarrosfontao-ai/Projeto_Faturacao_Web.git
+
+cd Projeto_Faturacao_Web
+
+▶️ Passo 2 — Configuração do ficheiro .env
+
+     O projeto utiliza variáveis de ambiente para configurar credenciais e serviços externos.
+
+     Na raiz do projeto, localiza o ficheiro:
+
+          .env_exemplo
+
+     Cria uma cópia com o nome:
+
+          .env
+
+     Edita o ficheiro .env e preenche os valores conforme o teu ambiente.
+
+     Exemplo:
+
+          # Base de Dados
+          MYSQL_ROOT_PASSWORD=root
+          MYSQL_DATABASE=faturaflow
+          MYSQL_USER=faturaflow_user
+          MYSQL_PASSWORD=faturaflow_pass
+
+          # Email (Mailtrap - ambiente de testes)
+          SMTP_HOST=sandbox.smtp.mailtrap.io
+          SMTP_PORT=587
+          SMTP_USER=teu_user_mailtrap
+          SMTP_PASS=tua_pass_mailtrap
+
+          # RabbitMQ
+          RABBITMQ_DEFAULT_USER=guest
+          RABBITMQ_DEFAULT_PASS=guest
+
+
+     📌 Nota:
+          Durante a apresentação da PAP, recomenda-se o uso do Mailtrap, garantindo que nenhum email real seja enviado.
+
+▶️ Passo 3 — Iniciar o Projeto com Docker Compose
+
+Após configurar o .env, executa:
+
+     docker-compose up -d
+
+
+Este comando irá:
+
+     criar e iniciar os contentores;
+     configurar automaticamente a base de dados MySQL;
+     iniciar o RabbitMQ;
+     arrancar a aplicação Web e o Worker Service.
+
+     📌 O sistema inclui mecanismos de retry para garantir que os serviços aguardem pela disponibilidade da base de dados antes de iniciar.
+
+▶️ Passo 4 — Aceder à Aplicação
+
+     Aplicação Web:
+
+          http://localhost:8080
+
+     Painel de gestão do RabbitMQ:
+          http://localhost:15672
+
+     Credenciais padrão:
+
+          Utilizador: guest
+          Password: guest
+
+▶️ Passo 5 — Teste do Envio de Emails
+
+     Os emails enviados pelo sistema podem ser visualizados no Mailtrap, permitindo validar:
+          envio correto do PDF;
+          comportamento do sistema em caso de erro;
+          funcionamento do Worker Service.
+
+🛑 Encerrar os Serviços
+
+     Para parar todos os contentores:
+          docker-compose down

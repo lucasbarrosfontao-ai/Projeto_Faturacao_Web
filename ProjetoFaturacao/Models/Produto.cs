@@ -20,6 +20,7 @@ namespace ProjetoFaturacao.Models
         public string Nome { get; set; } = string.Empty;
 
         [Required]
+        
         public string Referencia { get; set; } = string.Empty;
 
         public string Descricao { get; set; } = string.Empty;
@@ -32,7 +33,6 @@ namespace ProjetoFaturacao.Models
         public string Unidade_Medida { get; set; } = string.Empty;
 
         [Required]
-        [Range(0, double.MaxValue, ErrorMessage = "IVA não pode ser negativo.")]
         public decimal IVA { get; set; }
 
         [Required]

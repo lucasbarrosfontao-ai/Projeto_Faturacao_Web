@@ -2,7 +2,7 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using ProjetoFaturacao.Models;
-
+using System.Globalization;
 public class PdfGeneratorService
 {
     // O QuestPDF precisa de uma licença comunitária (gratuita para estudantes)
@@ -72,8 +72,8 @@ public class PdfGeneratorService
                         {
                             table.Cell().Element(CellStyle).Text(linha.Produto!.Nome ?? "Produto");
                             table.Cell().Element(CellStyle).Text(linha.Quantidade.ToString());
-                            table.Cell().Element(CellStyle).Text($"{linha.Preco_Unitario:C}");
-                            table.Cell().Element(CellStyle).Text($"{linha.Subtotal:C}");
+                            table.Cell().Element(CellStyle).Text($"{linha.Preco_Unitario.ToString("C", new CultureInfo("pt-PT"))}");
+                            table.Cell().Element(CellStyle).Text($"{linha.Subtotal.ToString("C", new CultureInfo("pt-PT"))}");
                             table.Cell().Element(CellStyle).Text(linha.Taxa_IVA.ToString());
 
                             static IContainer CellStyle(IContainer container) => container.PaddingVertical(5);
@@ -83,7 +83,7 @@ public class PdfGeneratorService
                     col.Item().AlignRight().PaddingTop(10).Text(text =>
                     {
                         text.Span("TOTAL A PAGAR: ").FontSize(14).SemiBold();
-                        text.Span($"{fatura.Valor_Total_Pagar:C}").FontSize(14).SemiBold().FontColor(Colors.Blue.Medium);
+                        text.Span($"{fatura.Valor_Total_Pagar.ToString("C", new CultureInfo("pt-PT"))}").FontSize(14).SemiBold().FontColor(Colors.Blue.Medium);
                     });
                 });
 

@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS Clientes (
     Morada VARCHAR(255),
     Localidade VARCHAR(100),
     Codigo_Postal VARCHAR(10)
+    Ativo BOOLEAN NOT NULL DEFAULT True
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tabela de Fornecedores
@@ -28,6 +29,7 @@ CREATE TABLE IF NOT EXISTS Fornecedores (
     Rua VARCHAR(255),
     Localidade VARCHAR(100),
     Codigo_Postal VARCHAR(10)
+    Ativo BOOLEAN NOT NULL DEFAULT True
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tabela de Produtos

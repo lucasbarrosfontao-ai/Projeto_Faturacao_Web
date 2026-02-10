@@ -1,3 +1,4 @@
+
 services:
   db:
     image: "mysql:8.0"
@@ -43,8 +44,6 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    healthcheck:
-      test: []
     environment:
       - ConnectionStrings__DefaultConnection=Server=db;Database=projeto_faturacao_db;Uid=root;Pwd=admin;
       - RABBITMQ_HOST=rabbitmq
