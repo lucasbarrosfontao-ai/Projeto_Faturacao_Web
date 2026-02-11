@@ -54,21 +54,23 @@ Categoria	               Tecnologias
 ⚠️ Limitações Assumidas
 
 Embora funcional, o projeto mantém as seguintes limitações de âmbito académico:
-     Não possui integração direta com o WebService da Autoridade Tributária (AT).
-     Ausência de Assinatura Digital Qualificada nos PDFs (conforme as normas fiscais vigentes).
+     Certificação Fiscal: O software não é certificado pela Autoridade Tributária.
+     Assinatura Digital: Não inclui a assinatura digital qualificada exigida em faturas PDF legais.
+     Comunicação AT: Não comunica dados via webservice ou exportação de ficheiro SAF-T (PT).
+     Segurança Avançada: Embora tenha autenticação, não foi submetido a testes de intrusão profissionais.
 
 📦 Como Executar o Projeto
 🔧 Pré-requisitos
 
-Docker Desktop
-Git
+     Docker Desktop
+     Git
 
 ▶️ Passo a Passo
 
 Clonar o repositório:
-Em uma pasta designada para esse projeto, abra o terminal do git e digite o comando abaixo.
-git clone https://github.com/lucasbarrosfontao-ai/Projeto_Faturacao_Web.git
-cd Projeto_Faturacao_Web
+Em uma pasta designada para esse projeto, abra o terminal do git e digite o comando abaixo:
+     git clone https://github.com/lucasbarrosfontao-ai/Projeto_Faturacao_Web.git
+     cd Projeto_Faturacao_Web
 
 Configurar Variáveis de Ambiente:
 
@@ -76,8 +78,8 @@ Renomeia o ficheiro .env_exemplo para .env.
 Preenche as tuas credenciais do Mailtrap (essencial para testar a recuperação de password e envio de faturas).
 
 Subir os Serviços:
-Na pasta Raiz (onde você ver o arquivo docker-compose.yml), digite esse comando
-docker-compose up -d
+Na pasta Raiz (onde você ver o arquivo docker-compose.yml), digite esse comando:
+     docker-compose up -d
 
 Aceder ao Sistema:
 
