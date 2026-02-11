@@ -69,6 +69,7 @@ Embora funcional, o projeto mantém as seguintes limitações de âmbito académ
 
 Clonar o repositório:
 Em uma pasta designada para esse projeto, abra o terminal do git e digite o comando abaixo:
+
      git clone https://github.com/lucasbarrosfontao-ai/Projeto_Faturacao_Web.git
      cd Projeto_Faturacao_Web
 
@@ -79,6 +80,7 @@ Preenche as tuas credenciais do Mailtrap (essencial para testar a recuperação 
 
 Subir os Serviços:
 Na pasta Raiz (onde você ver o arquivo docker-compose.yml), digite esse comando:
+
      docker-compose up -d
 
 Aceder ao Sistema:
