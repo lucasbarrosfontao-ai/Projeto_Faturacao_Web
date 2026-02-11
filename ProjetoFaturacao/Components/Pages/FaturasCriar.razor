@@ -3,13 +3,26 @@
 @using Microsoft.EntityFrameworkCore
 @using ProjetoFaturacao.Models 
 @using System.Globalization
+@using ProjetoFaturacao.Services
+@inject UserSession UserSession 
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime
 @inject ValidationService ValidationService
 @inject ApplicationDbContext DbContext
 @inject NavigationManager Navigation
 @inject RabbitMQService RabbitMQService
-
 <PageTitle>Inserir Fatura</PageTitle>
+@if (!UserSession.IsLoggedIn)
+{
+    <div class="d-flex justify-content-center align-items-center vh-100">
+        <div class="text-center">
+            <h3>Acesso Negado</h3>
+            <p>Você precisa fazer login para acessar este painel.</p>
+            <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/login")'>Ir para Login</button>
+        </div>
+    </div>
+}
+else 
+{
 
 <div class="container-fluid">
     <h3>Nova Fatura</h3>
@@ -145,7 +158,7 @@
         </div>
     </div>
 </div>
-
+}
 @code {
     private List<Cliente> clients = new();
     private List<Produto> products = new();
@@ -166,6 +179,12 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (!UserSession.IsLoggedIn)
+        {
+            // Se não estiver logado, redireciona imediatamente
+            Navigation.NavigateTo("/login");
+            return;
+        }
         clients = await DbContext.Clientes.ToListAsync();
         products = await DbContext.Produtos.ToListAsync();
     }
@@ -278,29 +297,25 @@
 
             try 
             {
-                // Precisamos do email do cliente para enviar o PDF. 
-                // Como só temos o ID, vamos buscar o objeto do cliente à nossa lista.
+                
                 var clienteData = clients.FirstOrDefault(c => c.Id_Cliente == selectedClientId);
 
                 var mensagem = new FaturaMessage
                 {
-                    Id_Fatura = newInvoice.Id_Fatura, // O ID gerado pelo MySQL
-                    EmailCliente = clienteData!.Email ?? "", // O email para onde o Worker enviará
+                    Id_Fatura = newInvoice.Id_Fatura, 
+                    EmailCliente = clienteData!.Email ?? "", 
                     NomeCliente = clienteData!.Nome ?? "Cliente"
                 };
 
-                // Envia para a fila do RabbitMQ
                 await RabbitMQService.EnviarFaturaParaFila(mensagem);
                 
                 await JSRuntime.InvokeVoidAsync("alert", "Fatura inserida e enviada para processamento de email!");
             }
             catch (Exception exRabbit)
             {
-                // Se o RabbitMQ falhar, a fatura já está gravada na BD, 
-                // apenas avisamos que o email pode atrasar.
                 await JSRuntime.InvokeVoidAsync("alert", "Fatura gravada, mas erro ao agendar email: " + exRabbit.Message);
             }
-            // ------------------------------------
+            
 
             invoiceItems.Clear();
             invoiceNumber = "";

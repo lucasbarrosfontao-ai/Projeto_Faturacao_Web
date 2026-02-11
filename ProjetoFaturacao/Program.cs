@@ -10,11 +10,15 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<RabbitMQService>();
 builder.Services.AddScoped<ValidationService>(); // Add this line for the new validator service
 
+
+builder.Services.AddScoped<ProjetoFaturacao.Services.EncryptionService>();
+builder.Services.AddScoped<ProjetoFaturacao.Services.UserSession>();
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 var app = builder.Build();
+
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

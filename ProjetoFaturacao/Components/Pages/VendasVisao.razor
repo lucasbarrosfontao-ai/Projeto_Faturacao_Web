@@ -1,9 +1,24 @@
 @page "/Vendas/VisaoGeral"
 @using Microsoft.EntityFrameworkCore
 @using ApexCharts
+@using ProjetoFaturacao.Services
+@inject UserSession UserSession 
+@inject NavigationManager Navigation
 @inject ApplicationDbContext DbContext
 
 <PageTitle>Visão Geral de Vendas - FaturaFlow</PageTitle>
+@if (!UserSession.IsLoggedIn)
+{
+    <div class="d-flex justify-content-center align-items-center vh-100">
+        <div class="text-center">
+            <h3>Acesso Negado</h3>
+            <p>Você precisa fazer login para acessar este painel.</p>
+            <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/login")'>Ir para Login</button>
+        </div>
+    </div>
+}
+else 
+{
 
 <div class="container-fluid pb-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -68,7 +83,7 @@
         </div>
     }
 </div>
-
+}
 @code {
     private List<DadosGrafico> vendas24h = new();
     private List<DadosGrafico> vendasSemana = new();
@@ -83,6 +98,12 @@
     {
         if (firstRender)
         {
+            if (!UserSession.IsLoggedIn)
+        {
+            // Se não estiver logado, redireciona imediatamente
+            Navigation.NavigateTo("/login");
+            return;
+        }
             await AtualizarManual();
         }
     }

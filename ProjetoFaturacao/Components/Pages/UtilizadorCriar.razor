@@ -1,0 +1,171 @@
+@page "/Utilizadores/Criar"
+@using Microsoft.EntityFrameworkCore
+@using ProjetoFaturacao.Models
+@using ProjetoFaturacao.Services
+
+@inject ApplicationDbContext DbContext
+@inject EncryptionService EncryptionService
+@inject UserSession session
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Criar Utilizador - FaturaFlow</PageTitle>
+
+@if (!session.IsLoggedIn)
+{
+    <div class="container mt-5">
+        <div class="alert alert-danger shadow">
+            <h4><i class="bi bi-exclamation-triangle-fill"></i> Acesso Negado</h4>
+            <p>Você precisa estar logado para criar novos utilizadores.</p>
+            <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/login")'>Ir para Login</button>
+        </div>
+    </div>
+}
+else
+{
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card shadow-lg">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0"><i class="bi bi-person-plus-fill me-2"></i>Novo Utilizador</h4>
+                    </div>
+                    <div class="card-body p-4">
+                        
+                        @if (!string.IsNullOrEmpty(mensagemErro))
+                        {
+                            <div class="alert alert-danger">@mensagemErro</div>
+                        }
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nome de Utilizador:</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                <input type="text" class="form-control" @bind="novoUsuario.Nome_Utilizador" placeholder="Ex: joao.silva" />
+                            </div>
+                        </div>
+
+                        <!-- NOVO CAMPO: E-MAIL DE RECUPERAÇÃO -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">E-mail de Recuperação:</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                <input type="email" class="form-control" @bind="novoUsuario.Email_Utilizador" placeholder="exemplo@email.com" />
+                            </div>
+                            <small class="text-muted">Este e-mail será usado para recuperar a senha caso necessário.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Palavra-Passe:</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-key"></i></span>
+                                <input type="password" class="form-control" @bind="senhaInput" placeholder="********" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Confirmar Palavra-Passe:</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-key-fill"></i></span>
+                                <input type="password" class="form-control" @bind="confirmarSenhaInput" placeholder="********" />
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-outline-secondary" @onclick="Voltar">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </button>
+                            <button class="btn btn-success px-4 shadow-sm" @onclick="SalvarUtilizador">
+                                <i class="bi bi-save me-1"></i> Criar Utilizador
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private Utilizador novoUsuario = new();
+    private string senhaInput = "";
+    private string confirmarSenhaInput = "";
+    private string mensagemErro = "";
+
+    private async Task SalvarUtilizador()
+    {
+        mensagemErro = "";
+
+        // 1. Validações básicas
+        if (string.IsNullOrWhiteSpace(novoUsuario.Nome_Utilizador) || 
+            string.IsNullOrWhiteSpace(novoUsuario.Email_Utilizador) || 
+            string.IsNullOrWhiteSpace(senhaInput))
+        {
+            mensagemErro = "Por favor, preencha todos os campos obrigatórios.";
+            return;
+        }
+
+        // Validação simples de formato de e-mail
+        if (!novoUsuario.Email_Utilizador.Contains("@") || !novoUsuario.Email_Utilizador.Contains("."))
+        {
+            mensagemErro = "Por favor, insira um e-mail válido.";
+            return;
+        }
+
+        if (senhaInput != confirmarSenhaInput)
+        {
+            mensagemErro = "As palavras-passe não coincidem.";
+            return;
+        }
+
+        if (senhaInput.Length < 6)
+        {
+            mensagemErro = "A palavra-passe deve ter pelo menos 6 caracteres.";
+            return;
+        }
+
+        try
+        {
+            // 2. Verificar se o nome de utilizador já existe
+            bool existeUser = await DbContext.Utilizadores
+                .AnyAsync(u => u.Nome_Utilizador == novoUsuario.Nome_Utilizador);
+
+            if (existeUser)
+            {
+                mensagemErro = "Este nome de utilizador já está em uso.";
+                return;
+            }
+
+            // 3. Verificar se o e-mail já está em uso
+            bool existeEmail = await DbContext.Utilizadores
+                .AnyAsync(u => u.Email_Utilizador == novoUsuario.Email_Utilizador);
+
+            if (existeEmail)
+            {
+                mensagemErro = "Este e-mail já está associado a outra conta.";
+                return;
+            }
+
+            // 4. Gerar o Hash da senha usando o serviço (BCrypt)
+            novoUsuario.Palavra_Passe = EncryptionService.GerarHash(senhaInput);
+
+            // 5. Salvar no Banco
+            DbContext.Utilizadores.Add(novoUsuario);
+            await DbContext.SaveChangesAsync();
+
+            await JSRuntime.InvokeVoidAsync("alert", "Utilizador '" + novoUsuario.Nome_Utilizador + "' criado com sucesso!");
+            
+            Navigation.NavigateTo("/Utilizadores/Ver");
+        }
+        catch (Exception ex)
+        {
+            mensagemErro = "Erro ao salvar no banco de dados: " + ex.Message;
+        }
+    }
+
+    private void Voltar()
+    {
+        Navigation.NavigateTo("/Utilizadores/Ver");
+    }
+}

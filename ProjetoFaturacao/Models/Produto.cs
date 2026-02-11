@@ -37,6 +37,8 @@ namespace ProjetoFaturacao.Models
 
         [Required]
         public int Stock_Atual { get; set; }
+        
+        public bool Ativo {get; set; } = true;
     }
     
 }

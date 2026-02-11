@@ -1,0 +1,75 @@
+@page "/Utilizadores/Recuperar/{Email}"
+@layout LayoutVazio
+@using Microsoft.EntityFrameworkCore
+@using ProjetoFaturacao.Models
+@using ProjetoFaturacao.Services
+
+@inject ApplicationDbContext DbContext
+@inject EncryptionService Encryption
+@inject NavigationManager Navigation
+
+<div class="container d-flex justify-content-center align-items-center vh-100">
+    <div class="card shadow p-4" style="max-width: 450px; width: 100%;">
+        <div class="text-center mb-4">
+            <i class="bi bi-shield-lock text-primary" style="font-size: 3rem;"></i>
+            <h3>Validar Código</h3>
+            <p class="text-muted">Verifique o código no email: <br/><b>@Email</b></p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(erro)) { <div class="alert alert-danger">@erro</div> }
+
+        <div class="mb-3">
+            <label class="form-label fw-bold">Código de Verificação:</label>
+            <input type="text" class="form-control text-center fs-4" @bind="codigoInput" placeholder="000000" maxlength="6" />
+        </div>
+
+        <hr />
+
+        <div class="mb-3">
+            <label class="form-label fw-bold">Nova Palavra-Passe:</label>
+            <input type="password" class="form-control" @bind="novaSenha" />
+        </div>
+
+        <button class="btn btn-success w-100 py-2 fw-bold" @onclick="ProcessarRedefinicao">
+            <i class="bi bi-check-circle"></i> Redefinir Palavra-Passe
+        </button>
+
+        <button class="btn btn-link w-100 mt-2 text-decoration-none text-muted" @onclick='() => Navigation.NavigateTo("/login")'>
+            Cancelar e Voltar
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Email { get; set; } = "";
+    private string codigoInput = "";
+    private string novaSenha = "";
+    private string erro = "";
+
+    private async Task ProcessarRedefinicao()
+    {
+        erro = "";
+
+        if (string.IsNullOrWhiteSpace(codigoInput) || string.IsNullOrWhiteSpace(novaSenha))
+        {
+            erro = "Preencha todos os campos.";
+            return;
+        }
+
+        var user = await DbContext.Utilizadores.FirstOrDefaultAsync(u => u.Email_Utilizador == Email);
+
+        if (user != null && user.Codigo_Recuperacao == codigoInput)
+        {
+            // SUCESSO!
+            user.Palavra_Passe = Encryption.GerarHash(novaSenha);
+            user.Codigo_Recuperacao = null; // Limpa o código para não ser usado de novo
+
+            await DbContext.SaveChangesAsync();
+            Navigation.NavigateTo("/login");
+        }
+        else
+        {
+            erro = "Código de verificação inválido ou expirado.";
+        }
+    }
+}

@@ -1,0 +1,170 @@
+﻿@page "/login"
+@layout LayoutVazio 
+@using Microsoft.EntityFrameworkCore
+@using ProjetoFaturacao.Models
+@using ProjetoFaturacao.Services
+
+@inject ApplicationDbContext DbContext
+@inject EncryptionService EncryptionService
+@inject RabbitMQService RabbitMQ
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@inject UserSession session
+
+<PageTitle>Login - FaturaFlow</PageTitle>
+
+<div class="d-flex justify-content-center align-items-center vh-100" style="background-color: #f0f2f5;">
+    <div class="card shadow-lg p-4" style="width: 400px; border-radius: 15px;">
+        
+        @if (!exibirRecuperacao)
+        {
+            <!-- FORMULÁRIO DE LOGIN -->
+            <div class="text-center mb-4">
+                <i class="bi bi-shield-lock-fill text-primary" style="font-size: 3rem;"></i>
+                <h3 class="fw-bold">🔐 FaturaFlow</h3>
+                <p class="text-muted">Bem-vindo! Identifique-se.</p>
+            </div>
+
+            @if (!string.IsNullOrEmpty(mensagemErro))
+            {
+                <div class="alert alert-danger text-center py-2">@mensagemErro</div>
+            }
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Utilizador</label>
+                <input type="text" class="form-control" @bind="usuarioInput" placeholder="Nome de utilizador" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Palavra-Passe</label>
+                <input type="password" class="form-control" @bind="senhaInput" placeholder="********" />
+            </div>
+
+            <button class="btn btn-primary w-100 py-2 fw-bold shadow-sm" @onclick="FazerLogin">Entrar</button>
+
+            <div class="text-center mt-3">
+                <button class="btn btn-link btn-sm text-decoration-none" @onclick="() => exibirRecuperacao = true">
+                    Esqueci-me da palavra-passe
+                </button>
+            </div>
+        }
+        else
+        {
+            <!-- FORMULÁRIO DE RECUPERAÇÃO -->
+            <div class="text-center mb-4">
+                <i class="bi bi-envelope-at text-info" style="font-size: 3rem;"></i>
+                <h3 class="fw-bold">Recuperar Acesso</h3>
+                <p class="text-muted">Enviaremos um código para o seu e-mail.</p>
+            </div>
+
+            @if (!string.IsNullOrEmpty(mensagemErro))
+            {
+                <div class="alert alert-danger text-center py-2">@mensagemErro</div>
+            }
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Introduza o seu E-mail</label>
+                <input type="email" class="form-control" @bind="emailRecuperacaoInput" placeholder="exemplo@email.com" />
+            </div>
+
+            <button class="btn btn-info text-white w-100 py-2 fw-bold shadow-sm" @onclick="SolicitarRecuperacao">
+                <i class="bi bi-send me-2"></i>Enviar Código
+            </button>
+
+            <div class="text-center mt-3">
+                <button class="btn btn-link btn-sm text-decoration-none text-muted" @onclick="() => exibirRecuperacao = false">
+                    Voltar ao Login
+                </button>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    // LOGIN
+    private string usuarioInput = "";
+    private string senhaInput = "";
+    
+    // RECUPERAÇÃO
+    private bool exibirRecuperacao = false;
+    private string emailRecuperacaoInput = "";
+    
+    private string mensagemErro = "";
+
+    private async Task FazerLogin()
+    {
+        mensagemErro = "";
+
+        if (string.IsNullOrWhiteSpace(usuarioInput) || string.IsNullOrWhiteSpace(senhaInput))
+        {
+            mensagemErro = "Preencha todos os campos.";
+            return;
+        }
+
+        var utilizadorEncontrado = await DbContext.Utilizadores
+            .FirstOrDefaultAsync(u => u.Nome_Utilizador == usuarioInput);
+
+        if (utilizadorEncontrado == null)
+        {
+            mensagemErro = "Utilizador incorreto.";
+            return;
+        }
+
+        if (EncryptionService.VerificarSenha(senhaInput, utilizadorEncontrado.Palavra_Passe))
+        {
+            session.IsLoggedIn = true; 
+            Navigation.NavigateTo("/"); 
+        }
+        else
+        {
+            mensagemErro = "Palavra-passe incorreta.";
+        }
+    }
+
+    private async Task SolicitarRecuperacao()
+    {
+        mensagemErro = "";
+
+        if (string.IsNullOrWhiteSpace(emailRecuperacaoInput))
+        {
+            mensagemErro = "Introduza o seu e-mail.";
+            return;
+        }
+
+        // 1. Verificar se o e-mail existe no banco
+        var user = await DbContext.Utilizadores
+            .FirstOrDefaultAsync(u => u.Email_Utilizador == emailRecuperacaoInput);
+
+        if (user == null)
+        {
+            mensagemErro = "Este e-mail não está associado a nenhuma conta.";
+            return;
+        }
+
+        try
+        {
+            // 2. Gerar código de 6 dígitos
+            int codigo = new Random().Next(100000, 999999);
+            user.Codigo_Recuperacao = codigo.ToString();
+
+            // 3. Salvar código na base de dados
+            DbContext.Utilizadores.Update(user);
+            await DbContext.SaveChangesAsync();
+
+            // 4. Enviar mensagem para o RabbitMQ
+            var msg = new RecuperacaoMessage {
+                NumeroRecuperacao = codigo,
+                EmailUtilizador = user.Email_Utilizador!
+            };
+            await RabbitMQ.EnviarCodigoParaSenhaDeRecuperacao(msg);
+
+            // 5. Ir para a página de validação que criamos antes
+            await JSRuntime.InvokeVoidAsync("alert", "O código foi enviado para o seu e-mail!");
+            Navigation.NavigateTo($"/Utilizadores/Recuperar/{user.Email_Utilizador}");
+        }
+        catch (Exception ex)
+        {
+            mensagemErro = "Erro ao processar: " + ex.Message;
+        }
+    }
+}

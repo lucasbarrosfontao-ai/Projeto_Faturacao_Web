@@ -5,6 +5,7 @@ public class ApplicationDbContext : DbContext
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
+    public DbSet<Utilizador> Utilizadores {get; set; } 
     public DbSet<Cliente> Clientes { get; set; }
     public DbSet<Fornecedor> Fornecedores { get; set; }
     public DbSet<Produto> Produtos { get; set; }
@@ -14,6 +15,7 @@ public class ApplicationDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
 {
     // Tabelas
+    modelBuilder.Entity<Utilizador>().ToTable("Utilizadores");
     modelBuilder.Entity<Cliente>().ToTable("Clientes");
     modelBuilder.Entity<Fornecedor>().ToTable("Fornecedores");
     modelBuilder.Entity<Produto>().ToTable("Produtos");
@@ -21,6 +23,7 @@ public class ApplicationDbContext : DbContext
     modelBuilder.Entity<LinhaFatura>().ToTable("Linhas_fatura");
 
     // Chaves Primárias
+    modelBuilder.Entity<Utilizador>().HasKey(u => u.Id_Utilizador);
     modelBuilder.Entity<Cliente>().HasKey(c => c.Id_Cliente);
     modelBuilder.Entity<Fornecedor>().HasKey(f => f.Id_Fornecedor);
     modelBuilder.Entity<Produto>().HasKey(p => p.Id_Produto);

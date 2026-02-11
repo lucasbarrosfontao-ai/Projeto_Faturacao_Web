@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS Clientes (
     Email VARCHAR(100),
     Morada VARCHAR(255),
     Localidade VARCHAR(100),
-    Codigo_Postal VARCHAR(10)
+    Codigo_Postal VARCHAR(10),
     Ativo BOOLEAN NOT NULL DEFAULT True
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS Fornecedores (
     Email VARCHAR(100),
     Rua VARCHAR(255),
     Localidade VARCHAR(100),
-    Codigo_Postal VARCHAR(10)
+    Codigo_Postal VARCHAR(10),
     Ativo BOOLEAN NOT NULL DEFAULT True
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -44,7 +44,8 @@ CREATE TABLE IF NOT EXISTS Produtos (
     Unidade_Medida VARCHAR(20),
     IVA DECIMAL(5, 2) NOT NULL DEFAULT 0.00,
     Stock_Atual DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-    FOREIGN KEY (Id_Fornecedor) REFERENCES Fornecedores(Id_Fornecedor) ON DELETE RESTRICT
+    FOREIGN KEY (Id_Fornecedor) REFERENCES Fornecedores(Id_Fornecedor) ON DELETE RESTRICT,
+    Ativo BOOLEAN NOT NULL DEFAULT True
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tabela de Faturas (Cabeçalho)
@@ -72,6 +73,16 @@ CREATE TABLE IF NOT EXISTS Linhas_fatura (
     FOREIGN KEY (Id_Fatura) REFERENCES Faturas(Id_Fatura) ON DELETE CASCADE,
     FOREIGN KEY (Id_Produto) REFERENCES Produtos(Id_Produto) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS Utilizadores(
+	Id_Utilizador INT AUTO_INCREMENT PRIMARY KEY,
+	Nome_Utilizador VARCHAR (50) NOT NULL UNIQUE, 
+	Palavra_Passe VARCHAR (255) NOT NULL,
+    Email_Utilizador VARCHAR(100),
+    Codigo_Recuperacao VARCHAR(10)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT IGNORE INTO Utilizadores (Nome_Utilizador, Palavra_Passe) 
+VALUES ('admin', '$2a$11$3PdCCqSb80EchOl0MLKVx.Lfwp848S1CIXPLcTppBIGu8RB9CpiwC');
 
 -- Índices para melhorar a velocidade de pesquisa
 CREATE INDEX idx_nif_cliente ON Clientes(NIF);

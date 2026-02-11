@@ -1,5 +1,6 @@
 using MailKit.Net.Smtp;
 using MimeKit;
+using MailKit.Security;
 
 public class EmailService
 {
@@ -56,5 +57,28 @@ public class EmailService
         {
             throw new Exception($"Erro ao enviar email: {ex.Message}");
         }
+    }
+    public async Task EnviarEmailRecuperacaoAsync(string emailDestinatario, int codigo)
+    {
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress("FaturaFlow Sistema", _config["SMTP_USER"]));
+        message.To.Add(new MailboxAddress("Utilizador", emailDestinatario));
+        message.Subject = "Código de Recuperação de Senha";
+
+        message.Body = new TextPart("plain")
+        {
+            Text = $@"Olá,
+            
+            Você solicitou a recuperação de senha no sistema FaturaFlow.
+            O seu código de verificação é: {codigo}
+            
+            Se não solicitou esta alteração, ignore este email."
+        };
+
+        using var client = new SmtpClient();
+        await client.ConnectAsync(_config["SMTP_HOST"], int.Parse(_config["SMTP_PORT"]!), SecureSocketOptions.StartTls);
+        await client.AuthenticateAsync(_config["SMTP_USER"], _config["SMTP_PASS"]);
+        await client.SendAsync(message);
+        await client.DisconnectAsync(true);
     }
 }

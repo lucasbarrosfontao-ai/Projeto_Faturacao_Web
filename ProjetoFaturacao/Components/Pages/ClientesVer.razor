@@ -6,9 +6,23 @@
 @inject IJSRuntime JSRuntime
 @inject ApplicationDbContext DbContext
 @inject NavigationManager Navigation
+@using ProjetoFaturacao.Services
+@inject UserSession UserSession 
 
 <PageTitle>Ver Clientes</PageTitle>
 
+@if (!UserSession.IsLoggedIn)
+{
+    <div class="d-flex justify-content-center align-items-center vh-100">
+        <div class="text-center">
+            <h3>Acesso Negado</h3>
+            <p>Você precisa fazer login para acessar este painel.</p>
+            <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/login")'>Ir para Login</button>
+        </div>
+    </div>
+}
+else 
+{
 <div class="container-fluid">
     <!-- HEADER AND SEARCH SECTION -->
     <div class="row mb-3 align-items-end">
@@ -95,7 +109,7 @@
         </div>
     </div>
 </div>
-
+}
 @code {
     // --- STATE VARIABLES ---
     private List<Cliente>? clientList;
@@ -106,14 +120,22 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (!UserSession.IsLoggedIn)
+        {
+            // Se não estiver logado, redireciona imediatamente
+            Navigation.NavigateTo("/login");
+            return;
+        }
         await LoadClients();
     }
 
     private async Task LoadClients()
     {
         clientList = await DbContext.Clientes
-                                   .OrderBy(c => c.Nome)
-                                   .ToListAsync();
+                                    .Where(c => c.Ativo == true)
+                                    .OrderBy(c => c.Nome)
+                                    .ToListAsync()
+                                    ;
     }
 
     private async Task Search()
@@ -173,25 +195,25 @@
     }
 
     private async Task DeleteClient(Cliente client)
-{
-    try
     {
-        // 1. Busca o cliente diretamente do contexto para garantir que ele está sendo rastreado
-        var clientToDelete = await DbContext.Clientes.FindAsync(client.Id_Cliente);
-
-        if (clientToDelete != null)
+        try
         {
-            DbContext.Clientes.Remove(clientToDelete);
-            await DbContext.SaveChangesAsync();
-            
-            // Atualiza a lista na tela
-            await LoadClients();
+            // 1. Busca o cliente diretamente do contexto para garantir que ele está sendo rastreado
+            var clientToDelete = await DbContext.Clientes.FindAsync(client.Id_Cliente);
+
+            if (clientToDelete != null)
+            {
+                clientToDelete.Ativo = false;
+                await DbContext.SaveChangesAsync();
+                
+                // Atualiza a lista na tela
+                await LoadClients();
+            }
+        }
+        catch (Exception ex)
+        {
+            // Se houver erro de chave estrangeira, a mensagem aparecerá aqui
+            await JSRuntime.InvokeVoidAsync("alert", "Erro ao desativar cliente: " + ex.InnerException?.Message ?? ex.Message);
         }
     }
-    catch (Exception ex)
-    {
-        // Se houver erro de chave estrangeira, a mensagem aparecerá aqui
-        await JSRuntime.InvokeVoidAsync("alert", "Erro ao eliminar cliente: " + ex.InnerException?.Message ?? ex.Message);
-    }
-}
 }

@@ -1,6 +1,8 @@
 @using Microsoft.AspNetCore.Components;
 @using Microsoft.EntityFrameworkCore;
 @using ProjetoFaturacao.Models;
+@using ProjetoFaturacao.Services
+@inject UserSession UserSession 
 @inject NavigationManager Navigation;
 
 @inject ApplicationDbContext DbContext
@@ -11,8 +13,17 @@
 <PageTitle>Guardar Fornecedor</PageTitle>
 
 <h1>Guardar Fornecedor</h1>
-
-@if (isLoading)
+@if (!UserSession.IsLoggedIn)
+{
+    <div class="d-flex justify-content-center align-items-center vh-100">
+        <div class="text-center">
+            <h3>Acesso Negado</h3>
+            <p>Você precisa fazer login para acessar este painel.</p>
+            <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/login")'>Ir para Login</button>
+        </div>
+    </div>
+}
+else if (isLoading)
 {
     <p><em>Carregando...</em></p>
 }
@@ -86,6 +97,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        if (!UserSession.IsLoggedIn)
+        {
+            // Se não estiver logado, redireciona imediatamente
+            Navigation.NavigateTo("/login");
+            return;
+        }
         if (Id.HasValue)
         {
             fornecedor = await DbContext.Fornecedores.FindAsync(Id.Value) ?? new Fornecedor();

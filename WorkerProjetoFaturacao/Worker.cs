@@ -50,15 +50,24 @@ public class Worker : BackgroundService
             }
         }
 
-        // 2. Configurar a Fila
+        // 2. Configurar as Filas
+        // DECLARAÇÃO DA FILA DE FATURAS
         await _channel!.QueueDeclareAsync(queue: "faturas_queue",
                                         durable: true,
                                         exclusive: false,
                                         autoDelete: false,
                                         arguments: null);
 
-        var consumer = new AsyncEventingBasicConsumer(_channel);
+        // DECLARAÇÃO DA FILA DE RECUPERAÇÃO 
+        await _channel!.QueueDeclareAsync(queue: "recuperacao_queue",
+                                        durable: true,
+                                        exclusive: false,
+                                        autoDelete: false,
+                                        arguments: null);
+        // --------------------------------
 
+        // Configuração do Consumidor de Faturas
+        var consumer = new AsyncEventingBasicConsumer(_channel);
         consumer.ReceivedAsync += async (model, ea) =>
         {
             var body = ea.Body.ToArray();
@@ -89,8 +98,33 @@ public class Worker : BackgroundService
 
         await _channel.BasicConsumeAsync(queue: "faturas_queue", autoAck: false, consumer: consumer);
         
-        // Mantém o worker rodando
-        await Task.Delay(Timeout.Infinite, stoppingToken);
+        var consumerRecuperacao = new AsyncEventingBasicConsumer(_channel);
+        consumerRecuperacao.ReceivedAsync += async (model, ea) =>
+        {
+            var body = ea.Body.ToArray();
+            var json = Encoding.UTF8.GetString(body);
+            var msg = JsonSerializer.Deserialize<RecuperacaoMessage>(json);
+
+            if (msg != null)
+            {
+                _logger.LogInformation($"[RabbitMQ] Processando recuperação para: {msg.EmailUtilizador}");
+                try 
+                {
+                    var emailService = new EmailService(_configuration);
+                    await emailService.EnviarEmailRecuperacaoAsync(msg.EmailUtilizador, msg.NumeroRecuperacao);
+                    await _channel.BasicAckAsync(ea.DeliveryTag, false);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Erro ao enviar email de recuperação: {ex.Message}");
+                    await _channel.BasicNackAsync(ea.DeliveryTag, false, true);
+                }
+            }
+        };
+
+        await _channel.BasicConsumeAsync(queue: "recuperacao_queue", autoAck: false, consumer: consumerRecuperacao);
+                // Mantém o worker rodando
+                await Task.Delay(Timeout.Infinite, stoppingToken);
     }
 
     private async Task ProcessarFatura(FaturaMessage msg)

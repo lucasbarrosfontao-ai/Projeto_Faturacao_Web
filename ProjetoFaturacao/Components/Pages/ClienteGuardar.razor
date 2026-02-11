@@ -1,14 +1,25 @@
 @page "/cliente/guardar/{Id:int?}"
+@using ProjetoFaturacao.Services
 @inject ApplicationDbContext DbContext
 @inject NavigationManager Navigation
 @inject ValidationService ValidationService  // Add this injection
-
+@inject UserSession UserSession 
 
 <PageTitle>Guardar Cliente</PageTitle>
 
 <h3>Guardar Cliente</h3>
+@if (!UserSession.IsLoggedIn)
+{
+    <div class="d-flex justify-content-center align-items-center vh-100">
+        <div class="text-center">
+            <h3>Acesso Negado</h3>
+            <p>Você precisa fazer login para acessar este painel.</p>
+            <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/login")'>Ir para Login</button>
+        </div>
+    </div>
+}
 
-@if (isLoading)
+else if (isLoading)
 {
     <p><em>Carregando...</em></p>
 }
@@ -80,6 +91,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        if (!UserSession.IsLoggedIn)
+        {
+            // Se não estiver logado, redireciona imediatamente
+            Navigation.NavigateTo("/login");
+            return;
+        }
         if (Id.HasValue)
         {
             cliente = await DbContext.Clientes.FindAsync(Id.Value) ?? new Cliente();

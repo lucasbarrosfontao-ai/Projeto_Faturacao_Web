@@ -1,0 +1,190 @@
+@page "/Utilizadores/Editar/{Id:int}"
+@using Microsoft.EntityFrameworkCore
+@using ProjetoFaturacao.Models
+@using ProjetoFaturacao.Services
+
+@inject ApplicationDbContext DbContext
+@inject EncryptionService EncryptionService
+@inject RabbitMQService RabbitMQ
+@inject UserSession session
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Editar Utilizador - FaturaFlow</PageTitle>
+
+@if (!session.IsLoggedIn)
+{
+    <div class="container mt-5 text-center">
+        <div class="alert alert-danger shadow">
+            <h4>Acesso Negado</h4>
+            <p>Precisa de estar logado para editar utilizadores.</p>
+            <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/login")'>Ir para Login</button>
+        </div>
+    </div>
+}
+else if (usuario == null)
+{
+    <div class="container mt-5 text-center">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p>A carregar dados do utilizador...</p>
+    </div>
+}
+else
+{
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Editar: @usuario.Nome_Utilizador</h4>
+                        <span class="badge bg-dark">ID: @usuario.Id_Utilizador</span>
+                    </div>
+                    <div class="card-body p-4">
+                        
+                        @if (!string.IsNullOrEmpty(mensagemErro))
+                        {
+                            <div class="alert alert-danger">@mensagemErro</div>
+                        }
+                        @if (!string.IsNullOrEmpty(mensagemSucesso))
+                        {
+                            <div class="alert alert-success">@mensagemSucesso</div>
+                        }
+
+                        <div class="mb-4 border-bottom pb-3">
+                            <h5 class="text-muted">Confirmação de Segurança</h5>
+                            <label class="form-label fw-bold">Palavra-Passe Antiga:</label>
+                            <input type="password" class="form-control border-warning" @bind="senhaAntiga" placeholder="Digite a senha atual" />
+                            
+                            <!-- BOTÃO DE RECUPERAÇÃO VIA RABBITMQ -->
+                            <div class="mt-2 text-end">
+                                <button class="btn btn-link btn-sm text-decoration-none" @onclick="SolicitarCodigoRecuperacao">
+                                    <i class="bi bi-envelope-at"></i> Esqueci a senha atual
+                                </button>
+                            </div>
+                        </div>
+
+                        <h5 class="text-muted">Novos Dados</h5>
+                        <div class="mb-3">
+                            <label class="form-label">Nome de Utilizador:</label>
+                            <input type="text" class="form-control" @bind="usuario.Nome_Utilizador" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">E-mail de Recuperação:</label>
+                            <input type="email" class="form-control" @bind="usuario.Email_Utilizador" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Nova Palavra-Passe (deixe em branco para manter):</label>
+                            <input type="password" class="form-control" @bind="novaSenha" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Confirmar Nova Palavra-Passe:</label>
+                            <input type="password" class="form-control" @bind="confirmarNovaSenha" />
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4 border-top pt-3">
+                            <button class="btn btn-secondary" @onclick="Voltar">Cancelar</button>
+                            <button class="btn btn-warning fw-bold px-4" @onclick="AtualizarUtilizador">
+                                <i class="bi bi-save me-1"></i> Gravar Alterações
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private Utilizador? usuario;
+    private string senhaAntiga = "";
+    private string novaSenha = "";
+    private string confirmarNovaSenha = "";
+    private string mensagemErro = "";
+    private string mensagemSucesso = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (session.IsLoggedIn)
+        {
+            usuario = await DbContext.Utilizadores.FindAsync(Id);
+            if (usuario == null) Navigation.NavigateTo("/Utilizadores/Ver");
+        }
+    }
+
+    private async Task SolicitarCodigoRecuperacao()
+    {
+        if (usuario == null || string.IsNullOrWhiteSpace(usuario.Email_Utilizador))
+        {
+            mensagemErro = "Este utilizador não possui um e-mail configurado.";
+            return;
+        }
+
+        try
+        {
+            // 1. Gerar Código de 6 dígitos
+            int codigo = new Random().Next(100000, 999999);
+            usuario.Codigo_Recuperacao = codigo.ToString();
+
+            // 2. Salvar código no banco
+            DbContext.Utilizadores.Update(usuario);
+            await DbContext.SaveChangesAsync();
+
+            // 3. Enviar mensagem para o RabbitMQ
+            var msg = new RecuperacaoMessage {
+                NumeroRecuperacao = codigo,
+                EmailUtilizador = usuario.Email_Utilizador
+            };
+            await RabbitMQ.EnviarCodigoParaSenhaDeRecuperacao(msg);
+
+            // 4. Redirecionar para a página de validação
+            await JSRuntime.InvokeVoidAsync("alert", "Um código de recuperação foi enviado para: " + usuario.Email_Utilizador);
+            Navigation.NavigateTo($"/Utilizadores/Recuperar/{usuario.Email_Utilizador}");
+        }
+        catch (Exception ex)
+        {
+            mensagemErro = "Erro ao processar recuperação: " + ex.Message;
+        }
+    }
+
+    // ... (Mantenha o seu método AtualizarUtilizador e Voltar como estavam) ...
+    private async Task AtualizarUtilizador()
+    {
+        mensagemErro = "";
+        mensagemSucesso = "";
+        if (usuario == null) return;
+
+        if (string.IsNullOrWhiteSpace(senhaAntiga)) {
+            mensagemErro = "Senha antiga obrigatória.";
+            return;
+        }
+
+        if (!EncryptionService.VerificarSenha(senhaAntiga, usuario.Palavra_Passe)) {
+            mensagemErro = "Senha antiga incorreta.";
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(novaSenha)) {
+            if (novaSenha != confirmarNovaSenha) {
+                mensagemErro = "Novas senhas não coincidem.";
+                return;
+            }
+            usuario.Palavra_Passe = EncryptionService.GerarHash(novaSenha);
+        }
+
+        try {
+            DbContext.Utilizadores.Update(usuario);
+            await DbContext.SaveChangesAsync();
+            mensagemSucesso = "Dados atualizados!";
+            senhaAntiga = ""; novaSenha = ""; confirmarNovaSenha = "";
+        } catch (Exception ex) {
+            mensagemErro = "Erro: " + ex.Message;
+        }
+    }
+
+    private void Voltar() => Navigation.NavigateTo("/Utilizadores/Ver");
+}
